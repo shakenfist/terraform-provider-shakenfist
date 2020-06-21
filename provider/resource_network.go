@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/hashicorp/terraform/helper/schema"
-	"github.com/mikalstill/shakenfist_go"
+	client "github.com/shakenfist/client-go"
 )
 
 func validateNetblock(v interface{}, k string) (ws []string, es []error) {
@@ -75,7 +75,7 @@ func resourceNetwork() *schema.Resource {
 }
 
 func resourceCreateNetwork(d *schema.ResourceData, m interface{}) error {
-	apiClient := m.(*shakenfist_go.Client)
+	apiClient := m.(*client.Client)
 
 	network, err := apiClient.CreateNetwork(
 		d.Get("netblock").(string), d.Get("provide_dhcp").(bool),
@@ -90,7 +90,7 @@ func resourceCreateNetwork(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceReadNetwork(d *schema.ResourceData, m interface{}) error {
-	apiClient := m.(*shakenfist_go.Client)
+	apiClient := m.(*client.Client)
 
 	network, err := apiClient.GetNetwork(d.Id())
 	if err != nil {
@@ -107,7 +107,7 @@ func resourceReadNetwork(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceDeleteNetwork(d *schema.ResourceData, m interface{}) error {
-	apiClient := m.(*shakenfist_go.Client)
+	apiClient := m.(*client.Client)
 
 	err := apiClient.DeleteNetwork(d.Id())
 	if err != nil {
@@ -118,7 +118,7 @@ func resourceDeleteNetwork(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceExistsNetwork(d *schema.ResourceData, m interface{}) (bool, error) {
-	apiClient := m.(*shakenfist_go.Client)
+	apiClient := m.(*client.Client)
 
 	_, err := apiClient.GetNetwork(d.Id())
 	if err != nil {

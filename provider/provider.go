@@ -5,7 +5,7 @@ package provider
 import (
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
-	"github.com/mikalstill/shakenfist_go"
+	client "github.com/shakenfist/client-go"
 )
 
 // Provider is the terraform provider interface
@@ -34,6 +34,6 @@ func Provider() terraform.ResourceProvider {
 func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 	address := d.Get("address").(string)
 	port := d.Get("port").(int)
-	return shakenfist_go.NewClient(address, port), nil
+	return client.NewClient(address, port), nil
 
 }

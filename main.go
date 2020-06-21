@@ -3,7 +3,7 @@
 package main
 
 import (
-	"terraform-provider-shakenfist/provider"
+	"github.com/shakenfist/terraform-provider-shakenfist/provider"
 
 	"github.com/hashicorp/terraform/plugin"
 )

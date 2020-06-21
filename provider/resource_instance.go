@@ -8,7 +8,7 @@ import (
 	"strings"
 
 	"github.com/hashicorp/terraform/helper/schema"
-	"github.com/mikalstill/shakenfist_go"
+	client "github.com/shakenfist/client-go"
 )
 
 func resourceInstance() *schema.Resource {
@@ -78,11 +78,11 @@ func resourceInstance() *schema.Resource {
 }
 
 func resourceCreateInstance(d *schema.ResourceData, m interface{}) error {
-	apiClient := m.(*shakenfist_go.Client)
+	apiClient := m.(*client.Client)
 
-	var disks []shakenfist_go.DiskSpec
+	var disks []client.DiskSpec
 	for _, disk := range d.Get("disks").([]interface{}) {
-		var diskSpec shakenfist_go.DiskSpec
+		var diskSpec client.DiskSpec
 		for _, diskElem := range strings.Split(disk.(string), ",") {
 			elems := strings.Split(diskElem, "=")
 			if elems[0] == "base" {
@@ -98,9 +98,9 @@ func resourceCreateInstance(d *schema.ResourceData, m interface{}) error {
 		disks = append(disks, diskSpec)
 	}
 
-	var networks []shakenfist_go.NetworkSpec
+	var networks []client.NetworkSpec
 	for _, net := range d.Get("networks").([]interface{}) {
-		var netSpec shakenfist_go.NetworkSpec
+		var netSpec client.NetworkSpec
 		for _, netElem := range strings.Split(net.(string), ",") {
 			elems := strings.Split(netElem, "=")
 			if elems[0] == "uuid" {
@@ -129,7 +129,7 @@ func resourceCreateInstance(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceReadInstance(d *schema.ResourceData, m interface{}) error {
-	apiClient := m.(*shakenfist_go.Client)
+	apiClient := m.(*client.Client)
 
 	inst, err := apiClient.GetInstance(d.Id())
 	if err != nil {
@@ -151,7 +151,7 @@ func resourceReadInstance(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceDeleteInstance(d *schema.ResourceData, m interface{}) error {
-	apiClient := m.(*shakenfist_go.Client)
+	apiClient := m.(*client.Client)
 
 	err := apiClient.DeleteInstance(d.Id())
 	if err != nil {
@@ -162,7 +162,7 @@ func resourceDeleteInstance(d *schema.ResourceData, m interface{}) error {
 }
 
 func resourceExistsInstance(d *schema.ResourceData, m interface{}) (bool, error) {
-	apiClient := m.(*shakenfist_go.Client)
+	apiClient := m.(*client.Client)
 
 	_, err := apiClient.GetInstance(d.Id())
 	if err != nil {
