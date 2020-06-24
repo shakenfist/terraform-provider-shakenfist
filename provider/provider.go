@@ -22,6 +22,21 @@ func Provider() terraform.ResourceProvider {
 				Required:    true,
 				DefaultFunc: schema.EnvDefaultFunc("SHAKENFIST_PORT", ""),
 			},
+			"namespace": {
+				Type:        schema.TypeString,
+				Required:    true,
+				DefaultFunc: schema.EnvDefaultFunc("SHAKENFIST_NAMESPACE", ""),
+			},
+			"keyname": {
+				Type:        schema.TypeString,
+				Required:    true,
+				DefaultFunc: schema.EnvDefaultFunc("SHAKENFIST_KEYNAME", ""),
+			},
+			"key": {
+				Type:        schema.TypeString,
+				Required:    true,
+				DefaultFunc: schema.EnvDefaultFunc("SHAKENFIST_KEY", ""),
+			},
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"shakenfist_network":  resourceNetwork(),
@@ -34,6 +49,9 @@ func Provider() terraform.ResourceProvider {
 func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 	address := d.Get("address").(string)
 	port := d.Get("port").(int)
-	return client.NewClient(address, port), nil
+	namespace := d.Get("namespace").(string)
+	keyname := d.Get("keyname").(string)
+	key := d.Get("key").(string)
 
+	return client.NewClient(address, port, namespace, keyname, key), nil
 }
