@@ -1,28 +1,24 @@
 provider "shakenfist" {
     address = "http://localhost"
-    port = 3000
-    namespace = "and"
-    keyname = "testkey"
-    key = "test"
+    port = 13000
+    namespace = "testspace"
+    keyname = "testkeyname"
+    key = "testkey"
 }
 
-resource "sf_instance" "sftest" {
+resource "shakenfist_instance" "sftest" {
     name = "sftest"
     cpus = 1
     memory = 1
     disks = [
-        {
-            size=8,
-            base="cirros",
-            bus="ide",
-            type="disk"
-            }
-
-    ]
-    networks = ["${sf_network.sf-net-1.uuid}"]
+        "size=8,base=cirros,bus=ide,type=disk",
+        ]
+    networks = [
+        "uuid=${shakenfist_network.sf-net-1.id}",
+        ]
 }
 
-resource "sf_network" "sf-net-1" {
+resource "shakenfist_network" "sf-net-1" {
     name = "sf-net-1"
     netblock = "10.0.1.0/24"
     provide_dhcp = true
