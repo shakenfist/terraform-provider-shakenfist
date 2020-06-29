@@ -27,11 +27,6 @@ func Provider() terraform.ResourceProvider {
 				Required:    true,
 				DefaultFunc: schema.EnvDefaultFunc("SHAKENFIST_NAMESPACE", ""),
 			},
-			"keyname": {
-				Type:        schema.TypeString,
-				Required:    true,
-				DefaultFunc: schema.EnvDefaultFunc("SHAKENFIST_KEYNAME", ""),
-			},
 			"key": {
 				Type:        schema.TypeString,
 				Required:    true,
@@ -50,8 +45,7 @@ func providerConfigure(d *schema.ResourceData) (interface{}, error) {
 	address := d.Get("address").(string)
 	port := d.Get("port").(int)
 	namespace := d.Get("namespace").(string)
-	keyname := d.Get("keyname").(string)
 	key := d.Get("key").(string)
 
-	return client.NewClient(address, port, namespace, keyname, key), nil
+	return client.NewClient(address, port, namespace, key), nil
 }

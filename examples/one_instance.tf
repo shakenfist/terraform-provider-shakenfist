@@ -2,7 +2,6 @@ provider "shakenfist" {
     address = "http://localhost"
     port = 13000
     namespace = "testspace"
-    keyname = "testkeyname"
     key = "testkey"
 }
 
