@@ -16,8 +16,14 @@ func resourceFloat() *schema.Resource {
 			"interface": {
 				Type:        schema.TypeString,
 				Required:    true,
-				Description: "UUID of interface",
+				Description: "UUID of Interface",
 				ForceNew:    true,
+			},
+			"ipv4": {
+				Type:        schema.TypeString,
+				Optional:    true,
+				Computed:    true,
+				Description: "IPv4 Address",
 			},
 		},
 		Create: resourceCreateFloat,
@@ -42,6 +48,10 @@ func resourceCreateFloat(d *schema.ResourceData, m interface{}) error {
 
 	d.Set("uuid", uuid)
 	d.SetId(uuid)
+
+	if err := resourceReadFloat(d, m); err != nil {
+		return fmt.Errorf("CreateFloat: %v", err)
+	}
 
 	return nil
 }
