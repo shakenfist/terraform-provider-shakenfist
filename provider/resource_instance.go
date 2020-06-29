@@ -54,6 +54,14 @@ func resourceInstance() *schema.Resource {
 					Type: schema.TypeString,
 				},
 			},
+			"interfaces": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
 			"ssh_key": {
 				Type:        schema.TypeString,
 				Optional:    true,
@@ -136,6 +144,17 @@ func resourceCreateInstance(d *schema.ResourceData, m interface{}) error {
 
 	d.Set("uuid", inst.UUID)
 	d.SetId(inst.UUID)
+
+	if inst.UUID == "" {
+		return fmt.Errorf("CreateInstance has returned a null UUID")
+	}
+
+	uuid, err := getInterfaceUUIDs(apiClient, inst.UUID)
+	if err != nil {
+		return fmt.Errorf("CreateInstance error: %v", err)
+	}
+	d.Set("interfaces", uuid)
+
 	return nil
 }
 
@@ -159,11 +178,11 @@ func resourceReadInstance(d *schema.ResourceData, m interface{}) error {
 	d.Set("user_data", inst.UserData)
 	d.SetId(inst.UUID)
 
-	interfaces, err := apiClient.GetInstanceInterfaces(inst.UUID)
+	uuid, err := getInterfaceUUIDs(apiClient, inst.UUID)
 	if err != nil {
-		return fmt.Errorf("Unable to retrieve instance interfaces: %v", err)
+		return fmt.Errorf("ReadInstance error: %v", err)
 	}
-	d.Set("interfaces", interfaces)
+	d.Set("interfaces", uuid)
 
 	return nil
 }
@@ -191,4 +210,19 @@ func resourceExistsInstance(d *schema.ResourceData, m interface{}) (bool, error)
 		}
 	}
 	return true, nil
+}
+
+func getInterfaceUUIDs(apiClient *client.Client, instanceUUID string) ([]string, error) {
+	interfaces, err := apiClient.GetInstanceInterfaces(instanceUUID)
+	if err != nil {
+		return []string{}, fmt.Errorf(
+			"unable to retrieve instance interfaces: %v", err)
+	}
+
+	var uuid []string
+	for _, i := range interfaces {
+		uuid = append(uuid, i.UUID)
+	}
+
+	return uuid, nil
 }

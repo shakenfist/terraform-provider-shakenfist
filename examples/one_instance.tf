@@ -23,3 +23,7 @@ resource "shakenfist_network" "sf-net-1" {
     provide_dhcp = true
     provide_nat = true
 }
+
+resource "shakenfist_float" "sf-float-1" {
+    interface = shakenfist_instance.sftest.interfaces[0]
+}
