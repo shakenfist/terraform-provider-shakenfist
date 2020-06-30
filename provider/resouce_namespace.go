@@ -21,19 +21,18 @@ func resourceNamespace() *schema.Resource {
 				Type:        schema.TypeString,
 				Required:    true,
 				Description: "The name of the key",
-				ForceNew:    true,
 			},
 			"key": {
 				Type:        schema.TypeString,
 				Required:    true,
 				Description: "The key used for authentication",
-				ForceNew:    true,
 			},
 		},
 		Create: resourceCreateNamespace,
 		Read:   resourceReadNamespace,
 		Delete: resourceDeleteNamespace,
 		Exists: resourceExistsNamespace,
+		Update: resourceUpdateNamespace,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -91,4 +90,19 @@ func resourceExistsNamespace(d *schema.ResourceData, m interface{}) (bool, error
 	}
 
 	return false, nil
+}
+
+func resourceUpdateNamespace(d *schema.ResourceData, m interface{}) error {
+	apiClient := m.(*client.Client)
+
+	err := apiClient.CreateNameSpace(
+		d.Get("name").(string),
+		d.Get("keyname").(string),
+		d.Get("key").(string),
+	)
+	if err != nil {
+		return fmt.Errorf("UpdateNamespace: cannot update namespace: %v", err)
+	}
+
+	return nil
 }
