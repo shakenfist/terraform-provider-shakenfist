@@ -34,9 +34,10 @@ func Provider() terraform.ResourceProvider {
 			},
 		},
 		ResourcesMap: map[string]*schema.Resource{
-			"shakenfist_network":  resourceNetwork(),
-			"shakenfist_instance": resourceInstance(),
-			"shakenfist_float":    resourceFloat(),
+			"shakenfist_namespace": resourceNamespace(),
+			"shakenfist_network":   resourceNetwork(),
+			"shakenfist_instance":  resourceInstance(),
+			"shakenfist_float":     resourceFloat(),
 		},
 		ConfigureFunc: providerConfigure,
 	}
