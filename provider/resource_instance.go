@@ -54,6 +54,14 @@ func resourceInstance() *schema.Resource {
 					Type: schema.TypeString,
 				},
 			},
+			"interfaces": {
+				Type:     schema.TypeList,
+				Optional: true,
+				Computed: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString,
+				},
+			},
 			"ssh_key": {
 				Type:        schema.TypeString,
 				Optional:    true,
@@ -81,18 +89,26 @@ func resourceCreateInstance(d *schema.ResourceData, m interface{}) error {
 	apiClient := m.(*client.Client)
 
 	var disks []client.DiskSpec
+	var err error
+
 	for _, disk := range d.Get("disks").([]interface{}) {
 		var diskSpec client.DiskSpec
 		for _, diskElem := range strings.Split(disk.(string), ",") {
-			elems := strings.Split(diskElem, "=")
-			if elems[0] == "base" {
-				diskSpec.Base = elems[1]
-			} else if elems[0] == "size" {
-				diskSpec.Size, _ = strconv.Atoi(elems[1])
-			} else if elems[0] == "bus" {
-				diskSpec.Bus = elems[1]
-			} else if elems[0] == "type" {
-				diskSpec.Type = elems[1]
+			e := strings.Split(diskElem, "=")
+			if e[0] == "base" {
+				diskSpec.Base = e[1]
+			} else if e[0] == "size" {
+				diskSpec.Size, err = strconv.Atoi(e[1])
+				if err != nil {
+					return fmt.Errorf("Disk size is not numeric: %v", err)
+				}
+			} else if e[0] == "bus" {
+				diskSpec.Bus = e[1]
+			} else if e[0] == "type" {
+				diskSpec.Type = e[1]
+			} else {
+				return fmt.Errorf("Incorrect disk spec, should be one of "+
+					"\"base\", \"size\", \"bus\", \"type\": %s", e[0])
 			}
 		}
 		disks = append(disks, diskSpec)
@@ -102,15 +118,18 @@ func resourceCreateInstance(d *schema.ResourceData, m interface{}) error {
 	for _, net := range d.Get("networks").([]interface{}) {
 		var netSpec client.NetworkSpec
 		for _, netElem := range strings.Split(net.(string), ",") {
-			elems := strings.Split(netElem, "=")
-			if elems[0] == "uuid" {
-				netSpec.NetworkUUID = elems[1]
-			} else if elems[0] == "address" {
-				netSpec.Address = elems[1]
-			} else if elems[0] == "macaddress" {
-				netSpec.MACAddress = elems[1]
-			} else if elems[0] == "model" {
-				netSpec.Model = elems[1]
+			e := strings.Split(netElem, "=")
+			if e[0] == "uuid" {
+				netSpec.NetworkUUID = e[1]
+			} else if e[0] == "address" {
+				netSpec.Address = e[1]
+			} else if e[0] == "macaddress" {
+				netSpec.MACAddress = e[1]
+			} else if e[0] == "model" {
+				netSpec.Model = e[1]
+			} else {
+				return fmt.Errorf("Incorrect network type, should be one of "+
+					"\"uuid\", \"address\", \"macaddress\", \"model\": %s", e[0])
 			}
 		}
 		networks = append(networks, netSpec)
@@ -120,11 +139,22 @@ func resourceCreateInstance(d *schema.ResourceData, m interface{}) error {
 		d.Get("memory").(int), networks, disks, d.Get("ssh_key").(string),
 		d.Get("user_data").(string))
 	if err != nil {
-		return err
+		return fmt.Errorf("Unable to create instance: %v", err)
 	}
 
 	d.Set("uuid", inst.UUID)
 	d.SetId(inst.UUID)
+
+	if inst.UUID == "" {
+		return fmt.Errorf("CreateInstance has returned a null UUID")
+	}
+
+	uuid, err := getInterfaceUUIDs(apiClient, inst.UUID)
+	if err != nil {
+		return fmt.Errorf("CreateInstance error: %v", err)
+	}
+	d.Set("interfaces", uuid)
+
 	return nil
 }
 
@@ -133,7 +163,7 @@ func resourceReadInstance(d *schema.ResourceData, m interface{}) error {
 
 	inst, err := apiClient.GetInstance(d.Id())
 	if err != nil {
-		return err
+		return fmt.Errorf("Unable to retrieve instance: %v", err)
 	}
 
 	d.Set("uuid", inst.UUID)
@@ -147,6 +177,13 @@ func resourceReadInstance(d *schema.ResourceData, m interface{}) error {
 	d.Set("vdi_port", inst.VDIPort)
 	d.Set("user_data", inst.UserData)
 	d.SetId(inst.UUID)
+
+	uuid, err := getInterfaceUUIDs(apiClient, inst.UUID)
+	if err != nil {
+		return fmt.Errorf("ReadInstance error: %v", err)
+	}
+	d.Set("interfaces", uuid)
+
 	return nil
 }
 
@@ -155,7 +192,7 @@ func resourceDeleteInstance(d *schema.ResourceData, m interface{}) error {
 
 	err := apiClient.DeleteInstance(d.Id())
 	if err != nil {
-		return err
+		return fmt.Errorf("Unable to retrieve network: %v", err)
 	}
 	d.SetId("")
 	return nil
@@ -169,8 +206,23 @@ func resourceExistsInstance(d *schema.ResourceData, m interface{}) (bool, error)
 		if strings.Contains(err.Error(), "not found") {
 			return false, nil
 		} else {
-			return false, err
+			return false, fmt.Errorf("Unable to check instance existence: %v", err)
 		}
 	}
 	return true, nil
+}
+
+func getInterfaceUUIDs(apiClient *client.Client, instanceUUID string) ([]string, error) {
+	interfaces, err := apiClient.GetInstanceInterfaces(instanceUUID)
+	if err != nil {
+		return []string{}, fmt.Errorf(
+			"unable to retrieve instance interfaces: %v", err)
+	}
+
+	var uuid []string
+	for _, i := range interfaces {
+		uuid = append(uuid, i.UUID)
+	}
+
+	return uuid, nil
 }

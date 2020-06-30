@@ -11,7 +11,7 @@ import (
 	client "github.com/shakenfist/client-go"
 )
 
-func validateNetblock(v interface{}, k string) (ws []string, es []error) {
+func validateNetblock(v interface{}, k string) ([]string, []error) {
 	var errs []error
 	var warns []string
 
@@ -81,7 +81,7 @@ func resourceCreateNetwork(d *schema.ResourceData, m interface{}) error {
 		d.Get("netblock").(string), d.Get("provide_dhcp").(bool),
 		d.Get("provide_nat").(bool), d.Get("name").(string))
 	if err != nil {
-		return err
+		return fmt.Errorf("Unable to create network: %v", err)
 	}
 
 	d.Set("uuid", network.UUID)
@@ -94,7 +94,7 @@ func resourceReadNetwork(d *schema.ResourceData, m interface{}) error {
 
 	network, err := apiClient.GetNetwork(d.Id())
 	if err != nil {
-		return err
+		return fmt.Errorf("Unable to retrieve network: %v", err)
 	}
 
 	d.Set("uuid", network.UUID)
@@ -111,7 +111,7 @@ func resourceDeleteNetwork(d *schema.ResourceData, m interface{}) error {
 
 	err := apiClient.DeleteNetwork(d.Id())
 	if err != nil {
-		return err
+		return fmt.Errorf("Unable to delete network: %v", err)
 	}
 	d.SetId("")
 	return nil
@@ -125,7 +125,7 @@ func resourceExistsNetwork(d *schema.ResourceData, m interface{}) (bool, error) 
 		if strings.Contains(err.Error(), "not found") {
 			return false, nil
 		} else {
-			return false, err
+			return false, fmt.Errorf("Unable to check network existence: %v", err)
 		}
 	}
 	return true, nil
