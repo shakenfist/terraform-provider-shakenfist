@@ -74,11 +74,18 @@ func resourceInstance() *schema.Resource {
 				Computed:    true,
 				Description: "User data to pass to the instance via config drive, encoded as base64",
 			},
+			"metadata": {
+				Type:     schema.TypeMap,
+				Optional: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString},
+			},
 		},
 		Create: resourceCreateInstance,
 		Read:   resourceReadInstance,
 		Delete: resourceDeleteInstance,
 		Exists: resourceExistsInstance,
+		Update: resourceUpdateInstance,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -142,20 +149,29 @@ func resourceCreateInstance(d *schema.ResourceData, m interface{}) error {
 		return fmt.Errorf("Unable to create instance: %v", err)
 	}
 
+	// If Shaken Fist has a server error, it can return a blank UUID
+	if inst.UUID == "" {
+		return fmt.Errorf("Shaken Fist has returned a null instance UUID")
+	}
+
+	// Signal to TF that the instance exists by setting the ID.
 	d.Set("uuid", inst.UUID)
 	d.SetId(inst.UUID)
 
-	if inst.UUID == "" {
-		return fmt.Errorf("CreateInstance has returned a null UUID")
+	// Set metadata on the instance
+	for k, v := range d.Get("metadata").(map[string]interface{}) {
+		val, ok := v.(string)
+		if ok != true {
+			return fmt.Errorf("Tag value is not a string")
+		}
+
+		err := apiClient.SetMetadata(client.TypeInstance, inst.UUID, k, val)
+		if err != nil {
+			return fmt.Errorf("CreateInstance cannot store metadata: %v", err)
+		}
 	}
 
-	uuid, err := getInterfaceUUIDs(apiClient, inst.UUID)
-	if err != nil {
-		return fmt.Errorf("CreateInstance error: %v", err)
-	}
-	d.Set("interfaces", uuid)
-
-	return nil
+	return resourceReadInstance(d, m)
 }
 
 func resourceReadInstance(d *schema.ResourceData, m interface{}) error {
@@ -169,20 +185,27 @@ func resourceReadInstance(d *schema.ResourceData, m interface{}) error {
 	d.Set("uuid", inst.UUID)
 	d.Set("name", inst.Name)
 	d.Set("cpus", inst.CPUs)
-	d.Set("memory", inst.Memory)
+	d.Set("memory", inst.Memory/1024)
 	d.Set("disks", inst.DiskSpecs)
 	d.Set("ssh_key", inst.SSHKey)
 	d.Set("node", inst.Node)
 	d.Set("console_port", inst.ConsolePort)
 	d.Set("vdi_port", inst.VDIPort)
 	d.Set("user_data", inst.UserData)
-	d.SetId(inst.UUID)
 
-	uuid, err := getInterfaceUUIDs(apiClient, inst.UUID)
+	// Retrieve Interface UUID's
+	uuid, err := getInterfaceUUIDs(apiClient, d.Id())
 	if err != nil {
 		return fmt.Errorf("ReadInstance error: %v", err)
 	}
 	d.Set("interfaces", uuid)
+
+	// Retrieve metadata
+	metadata, err := apiClient.GetMetadata(client.TypeInstance, inst.UUID)
+	if err != nil {
+		return fmt.Errorf("ReadInstance unable to retrieve metadata: %v", err)
+	}
+	d.Set("metadata", metadata)
 
 	return nil
 }
@@ -210,6 +233,18 @@ func resourceExistsInstance(d *schema.ResourceData, m interface{}) (bool, error)
 		}
 	}
 	return true, nil
+}
+
+func resourceUpdateInstance(d *schema.ResourceData, m interface{}) error {
+	apiClient := m.(*client.Client)
+
+	if d.HasChange("metadata") {
+		if err := updateMetadata(client.TypeInstance, d, apiClient); err != nil {
+			return fmt.Errorf("UpdateInstance error: %v", err)
+		}
+	}
+
+	return nil
 }
 
 func getInterfaceUUIDs(apiClient *client.Client, instanceUUID string) ([]string, error) {

@@ -63,11 +63,18 @@ func resourceNetwork() *schema.Resource {
 				Description: "Should NAT services exist on the network?",
 				ForceNew:    true,
 			},
+			"metadata": {
+				Type:     schema.TypeMap,
+				Optional: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString},
+			},
 		},
 		Create: resourceCreateNetwork,
 		Read:   resourceReadNetwork,
 		Delete: resourceDeleteNetwork,
 		Exists: resourceExistsNetwork,
+		Update: resourceUpdateNetwork,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
 		},
@@ -86,6 +93,20 @@ func resourceCreateNetwork(d *schema.ResourceData, m interface{}) error {
 
 	d.Set("uuid", network.UUID)
 	d.SetId(network.UUID)
+
+	// Set metadata on the network
+	for k, v := range d.Get("metadata").(map[string]interface{}) {
+		val, ok := v.(string)
+		if ok != true {
+			return fmt.Errorf("Tag value is not a string")
+		}
+
+		err := apiClient.SetMetadata(client.TypeNetwork, network.UUID, k, val)
+		if err != nil {
+			return fmt.Errorf("CreateNetwork cannot store metadata: %v", err)
+		}
+	}
+
 	return nil
 }
 
@@ -102,7 +123,14 @@ func resourceReadNetwork(d *schema.ResourceData, m interface{}) error {
 	d.Set("netblock", network.NetBlock)
 	d.Set("provide_dhcp", network.ProvideDHCP)
 	d.Set("provide_nat", network.ProvideNAT)
-	d.SetId(network.UUID)
+
+	// Retrieve metadata
+	metadata, err := apiClient.GetMetadata(client.TypeNetwork, d.Id())
+	if err != nil {
+		return fmt.Errorf("ReadInstance unable to retrieve metadata: %v", err)
+	}
+	d.Set("metadata", metadata)
+
 	return nil
 }
 
@@ -129,4 +157,16 @@ func resourceExistsNetwork(d *schema.ResourceData, m interface{}) (bool, error) 
 		}
 	}
 	return true, nil
+}
+
+func resourceUpdateNetwork(d *schema.ResourceData, m interface{}) error {
+	apiClient := m.(*client.Client)
+
+	if d.HasChange("metadata") {
+		if err := updateMetadata(client.TypeNetwork, d, apiClient); err != nil {
+			return fmt.Errorf("UpdateNetwork error: %v", err)
+		}
+	}
+
+	return nil
 }

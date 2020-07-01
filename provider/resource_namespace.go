@@ -27,6 +27,12 @@ func resourceNamespace() *schema.Resource {
 				Required:    true,
 				Description: "The key used for authentication",
 			},
+			"metadata": {
+				Type:     schema.TypeMap,
+				Optional: true,
+				Elem: &schema.Schema{
+					Type: schema.TypeString},
+			},
 		},
 		Create: resourceCreateNamespace,
 		Read:   resourceReadNamespace,
@@ -41,9 +47,10 @@ func resourceNamespace() *schema.Resource {
 
 func resourceCreateNamespace(d *schema.ResourceData, m interface{}) error {
 	apiClient := m.(*client.Client)
+	name := d.Get("name").(string)
 
 	err := apiClient.CreateNameSpace(
-		d.Get("name").(string),
+		name,
 		d.Get("keyname").(string),
 		d.Get("key").(string),
 	)
@@ -51,15 +58,33 @@ func resourceCreateNamespace(d *schema.ResourceData, m interface{}) error {
 		return fmt.Errorf("Unable to create namespace: %v", err)
 	}
 
-	d.SetId(d.Get("name").(string))
+	// Set metadata on namespace
+	for k, v := range d.Get("metadata").(map[string]interface{}) {
+		val, ok := v.(string)
+		if ok != true {
+			return fmt.Errorf("Tag value is not a string")
+		}
+
+		err := apiClient.SetMetadata(client.TypeNamespace, name, k, val)
+		if err != nil {
+			return fmt.Errorf("CreateNamespace cannot store metadata: %v", err)
+		}
+	}
+
+	d.SetId(name)
 
 	return nil
 }
 
 func resourceReadNamespace(d *schema.ResourceData, m interface{}) error {
+	apiClient := m.(*client.Client)
 
-	// A Namespace only has keynames and keys.
-	// Neither are relevant at the moment to Terraform
+	// Retrieve metadata
+	metadata, err := apiClient.GetMetadata(client.TypeNamespace, d.Id())
+	if err != nil {
+		return fmt.Errorf("ReadNamespace unable to retrieve metadata: %v", err)
+	}
+	d.Set("metadata", metadata)
 
 	return nil
 }
@@ -95,13 +120,21 @@ func resourceExistsNamespace(d *schema.ResourceData, m interface{}) (bool, error
 func resourceUpdateNamespace(d *schema.ResourceData, m interface{}) error {
 	apiClient := m.(*client.Client)
 
-	err := apiClient.CreateNameSpace(
-		d.Get("name").(string),
-		d.Get("keyname").(string),
-		d.Get("key").(string),
-	)
-	if err != nil {
-		return fmt.Errorf("UpdateNamespace: cannot update namespace: %v", err)
+	if d.HasChange("keyname") {
+		err := apiClient.CreateNameSpace(
+			d.Id(),
+			d.Get("keyname").(string),
+			d.Get("key").(string),
+		)
+		if err != nil {
+			return fmt.Errorf("UpdateNamespace: cannot update namespace: %v", err)
+		}
+	}
+
+	if d.HasChange("metadata") {
+		if err := updateMetadata(client.TypeNamespace, d, apiClient); err != nil {
+			return fmt.Errorf("UpdateNamespace error: %v", err)
+		}
 	}
 
 	return nil
