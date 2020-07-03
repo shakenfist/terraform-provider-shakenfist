@@ -185,7 +185,7 @@ func resourceReadInstance(d *schema.ResourceData, m interface{}) error {
 	d.Set("uuid", inst.UUID)
 	d.Set("name", inst.Name)
 	d.Set("cpus", inst.CPUs)
-	d.Set("memory", inst.Memory/1024)
+	d.Set("memory", inst.Memory)
 	d.Set("disks", inst.DiskSpecs)
 	d.Set("ssh_key", inst.SSHKey)
 	d.Set("node", inst.Node)

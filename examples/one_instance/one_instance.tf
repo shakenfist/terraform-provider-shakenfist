@@ -8,7 +8,7 @@ provider "shakenfist" {
 resource "shakenfist_instance" "sftest" {
     name = "sftest"
     cpus = 1
-    memory = 1
+    memory = 1024
     disks = [
         "size=8,base=cirros,bus=ide,type=disk",
         ]
