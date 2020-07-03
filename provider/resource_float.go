@@ -88,7 +88,8 @@ func resourceExistsFloat(d *schema.ResourceData, m interface{}) (bool, error) {
 
 	iface, err := apiClient.GetInterface(d.Id())
 	if err != nil {
-		return false, fmt.Errorf("Unable to retrieve network interface: %v", err)
+		// The interface does not exist, therefore the floating IP does not exist.
+		return false, nil
 	}
 
 	if iface.Floating == "" {
