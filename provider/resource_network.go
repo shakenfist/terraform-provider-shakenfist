@@ -125,7 +125,7 @@ func resourceReadNetwork(d *schema.ResourceData, m interface{}) error {
 	d.Set("provide_nat", network.ProvideNAT)
 
 	// Retrieve metadata
-	metadata, err := apiClient.GetMetadata(client.TypeNetwork, d.Id())
+	metadata, err := apiClient.GetNetworkMetadata(d.Id())
 	if err != nil {
 		return fmt.Errorf("ReadInstance unable to retrieve metadata: %v", err)
 	}
@@ -148,7 +148,7 @@ func resourceDeleteNetwork(d *schema.ResourceData, m interface{}) error {
 func resourceExistsNetwork(d *schema.ResourceData, m interface{}) (bool, error) {
 	apiClient := m.(*client.Client)
 
-	_, err := apiClient.GetNetwork(d.Id())
+	n, err := apiClient.GetNetwork(d.Id())
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {
 			return false, nil
@@ -156,6 +156,11 @@ func resourceExistsNetwork(d *schema.ResourceData, m interface{}) (bool, error) 
 			return false, fmt.Errorf("Unable to check network existence: %v", err)
 		}
 	}
+
+	if n.State == "deleted" {
+		return false, nil
+	}
+
 	return true, nil
 }
 

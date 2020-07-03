@@ -224,7 +224,7 @@ func resourceDeleteInstance(d *schema.ResourceData, m interface{}) error {
 func resourceExistsInstance(d *schema.ResourceData, m interface{}) (bool, error) {
 	apiClient := m.(*client.Client)
 
-	_, err := apiClient.GetInstance(d.Id())
+	i, err := apiClient.GetInstance(d.Id())
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {
 			return false, nil
@@ -232,6 +232,11 @@ func resourceExistsInstance(d *schema.ResourceData, m interface{}) (bool, error)
 			return false, fmt.Errorf("Unable to check instance existence: %v", err)
 		}
 	}
+
+	if i.State == "deleted" {
+		return false, nil
+	}
+
 	return true, nil
 }
 
