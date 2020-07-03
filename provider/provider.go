@@ -12,10 +12,10 @@ import (
 func Provider() terraform.ResourceProvider {
 	return &schema.Provider{
 		Schema: map[string]*schema.Schema{
-			"address": {
+			"hostname": {
 				Type:        schema.TypeString,
 				Required:    true,
-				DefaultFunc: schema.EnvDefaultFunc("SHAKENFIST_SERVER", ""),
+				DefaultFunc: schema.EnvDefaultFunc("SHAKENFIST_HOSTNAME", ""),
 			},
 			"port": {
 				Type:        schema.TypeInt,
@@ -35,6 +35,7 @@ func Provider() terraform.ResourceProvider {
 		},
 		ResourcesMap: map[string]*schema.Resource{
 			"shakenfist_namespace": resourceNamespace(),
+			"shakenfist_key":       resourceKey(),
 			"shakenfist_network":   resourceNetwork(),
 			"shakenfist_instance":  resourceInstance(),
 			"shakenfist_float":     resourceFloat(),
@@ -44,10 +45,10 @@ func Provider() terraform.ResourceProvider {
 }
 
 func providerConfigure(d *schema.ResourceData) (interface{}, error) {
-	address := d.Get("address").(string)
+	hostname := d.Get("hostname").(string)
 	port := d.Get("port").(int)
 	namespace := d.Get("namespace").(string)
 	key := d.Get("key").(string)
 
-	return client.NewClient(address, port, namespace, key), nil
+	return client.NewClient(hostname, port, namespace, key), nil
 }

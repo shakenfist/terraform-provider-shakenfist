@@ -17,16 +17,6 @@ func resourceNamespace() *schema.Resource {
 				Description: "The name of the namespace",
 				ForceNew:    true,
 			},
-			"keyname": {
-				Type:        schema.TypeString,
-				Required:    true,
-				Description: "The name of the key",
-			},
-			"key": {
-				Type:        schema.TypeString,
-				Required:    true,
-				Description: "The key used for authentication",
-			},
 			"metadata": {
 				Type:     schema.TypeMap,
 				Optional: true,
@@ -47,14 +37,9 @@ func resourceNamespace() *schema.Resource {
 
 func resourceCreateNamespace(d *schema.ResourceData, m interface{}) error {
 	apiClient := m.(*client.Client)
-	name := d.Get("name").(string)
+	namespace := d.Get("name").(string)
 
-	err := apiClient.CreateNameSpace(
-		name,
-		d.Get("keyname").(string),
-		d.Get("key").(string),
-	)
-	if err != nil {
+	if err := apiClient.CreateNamespace(namespace); err != nil {
 		return fmt.Errorf("Unable to create namespace: %v", err)
 	}
 
@@ -65,13 +50,13 @@ func resourceCreateNamespace(d *schema.ResourceData, m interface{}) error {
 			return fmt.Errorf("Tag value is not a string")
 		}
 
-		err := apiClient.SetMetadata(client.TypeNamespace, name, k, val)
+		err := apiClient.SetMetadata(client.TypeNamespace, namespace, k, val)
 		if err != nil {
 			return fmt.Errorf("CreateNamespace cannot store metadata: %v", err)
 		}
 	}
 
-	d.SetId(name)
+	d.SetId(namespace)
 
 	return nil
 }
@@ -92,7 +77,7 @@ func resourceReadNamespace(d *schema.ResourceData, m interface{}) error {
 func resourceDeleteNamespace(d *schema.ResourceData, m interface{}) error {
 	apiClient := m.(*client.Client)
 
-	err := apiClient.DeleteNameSpace(d.Id())
+	err := apiClient.DeleteNamespace(d.Id())
 	if err != nil {
 		return fmt.Errorf("Unable to delete namespace: %v", err)
 	}
@@ -103,7 +88,7 @@ func resourceDeleteNamespace(d *schema.ResourceData, m interface{}) error {
 func resourceExistsNamespace(d *schema.ResourceData, m interface{}) (bool, error) {
 	apiClient := m.(*client.Client)
 
-	namespaces, err := apiClient.GetNameSpaces()
+	namespaces, err := apiClient.GetNamespaces()
 	if err != nil {
 		return false, fmt.Errorf("Unable to retrieve namespaces: %v", err)
 	}
@@ -119,17 +104,6 @@ func resourceExistsNamespace(d *schema.ResourceData, m interface{}) (bool, error
 
 func resourceUpdateNamespace(d *schema.ResourceData, m interface{}) error {
 	apiClient := m.(*client.Client)
-
-	if d.HasChange("keyname") {
-		err := apiClient.CreateNameSpace(
-			d.Id(),
-			d.Get("keyname").(string),
-			d.Get("key").(string),
-		)
-		if err != nil {
-			return fmt.Errorf("UpdateNamespace: cannot update namespace: %v", err)
-		}
-	}
 
 	if d.HasChange("metadata") {
 		if err := updateMetadata(client.TypeNamespace, d, apiClient); err != nil {

@@ -1,8 +1,8 @@
 provider "shakenfist" {
-    address = "http://localhost"
+    hostname = "sf-1"
     port = 13000
     namespace = "testspace"
-    key = "testkey"
+    key = "secret"
 }
 
 resource "shakenfist_instance" "sftest" {
@@ -15,6 +15,10 @@ resource "shakenfist_instance" "sftest" {
     networks = [
         "uuid=${shakenfist_network.sf-net-1.id}",
         ]
+    metadata = {
+        person = "old man"
+        action = "shakes fist"
+    }
 }
 
 resource "shakenfist_network" "sf-net-1" {
@@ -22,6 +26,9 @@ resource "shakenfist_network" "sf-net-1" {
     netblock = "10.0.1.0/24"
     provide_dhcp = true
     provide_nat = true
+    metadata = {
+        purpose = "external"
+    }
 }
 
 resource "shakenfist_float" "sf-float-1" {
