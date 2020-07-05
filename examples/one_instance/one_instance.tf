@@ -1,6 +1,5 @@
 provider "shakenfist" {
-    hostname = "sf-1"
-    port = 13000
+    server_url = "http://sf-1:13000"
     namespace = "testspace"
     key = "secret"
 }

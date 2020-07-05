@@ -3,6 +3,8 @@
 package provider
 
 import (
+	"fmt"
+
 	"github.com/hashicorp/terraform/helper/schema"
 	"github.com/hashicorp/terraform/terraform"
 	client "github.com/shakenfist/client-go"
@@ -12,15 +14,10 @@ import (
 func Provider() terraform.ResourceProvider {
 	return &schema.Provider{
 		Schema: map[string]*schema.Schema{
-			"hostname": {
+			"server_url": {
 				Type:        schema.TypeString,
 				Required:    true,
-				DefaultFunc: schema.EnvDefaultFunc("SHAKENFIST_HOSTNAME", ""),
-			},
-			"port": {
-				Type:        schema.TypeInt,
-				Required:    true,
-				DefaultFunc: schema.EnvDefaultFunc("SHAKENFIST_PORT", ""),
+				DefaultFunc: schema.EnvDefaultFunc("SHAKENFIST_URL", ""),
 			},
 			"namespace": {
 				Type:        schema.TypeString,
@@ -45,10 +42,20 @@ func Provider() terraform.ResourceProvider {
 }
 
 func providerConfigure(d *schema.ResourceData) (interface{}, error) {
-	hostname := d.Get("hostname").(string)
-	port := d.Get("port").(int)
+	server_url := d.Get("server_url").(string)
 	namespace := d.Get("namespace").(string)
 	key := d.Get("key").(string)
 
-	return client.NewClient(hostname, port, namespace, key), nil
+	if server_url == "" {
+		return nil, fmt.Errorf(
+			"Server URL not set, expecting \"http://<server>:<port>\"")
+	}
+	if namespace == "" {
+		return nil, fmt.Errorf("Namespace not set")
+	}
+	if key == "" {
+		return nil, fmt.Errorf("Access key not set")
+	}
+
+	return client.NewClient(server_url, namespace, key), nil
 }

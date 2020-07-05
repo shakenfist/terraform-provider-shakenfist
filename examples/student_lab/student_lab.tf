@@ -8,8 +8,7 @@
 // Create new namespace using Shaken Fist "system" privilege.
 provider "shakenfist" {
     alias = "system"
-    hostname = "sf-1"
-    port = 13000
+    server_url = "http://sf-1:13000"
     namespace = "system"
     key = "Ukoh5vie"
 }
@@ -35,8 +34,7 @@ resource "shakenfist_key" "key1" {
 // Build lab resources in the new namespace.
 //
 provider "shakenfist" {
-    hostname = "sf-1"
-    port = 13000
+    server_url = "http://sf-1:13000"
     namespace = shakenfist_namespace.lab123.name
     key = shakenfist_key.key1.key
 }
