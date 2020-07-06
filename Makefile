@@ -4,7 +4,6 @@
 # https://github.com/terraform-providers/terraform-provider-aws/tree/master/aws
 
 
-SWEEP?=us-east-1,us-west-2
 GOFMT_FILES?=$$(find . -name '*.go' |grep -v vendor)
 PKG_NAME=provider
 TEST?=./$(PKG_NAME)/...
@@ -17,9 +16,13 @@ build: fmtcheck
 	@echo "==> Building..."
 	go build .
 
+# Acceptance tests
+testacc: fmtcheck
+	TF_ACC=1 go test $(TEST) -v -count $(TEST_COUNT) -parallel 20 $(TESTARGS) -timeout 120m
+
 # Unit tests
 test: fmtcheck
-	go test $(TEST) $(TESTARGS) -timeout=120s -parallel=4
+	go test $(TEST) $(TESTARGS) -v -timeout=120s -parallel=4
 
 fmt:
 	@echo "==> Fixing source code with gofmt..."
