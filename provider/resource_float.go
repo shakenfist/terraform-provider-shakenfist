@@ -46,9 +46,6 @@ func resourceCreateFloat(d *schema.ResourceData, m interface{}) error {
 		return fmt.Errorf("Unable to float interface: %v", err)
 	}
 
-	if err := d.Set("uuid", uuid); err != nil {
-		return fmt.Errorf("Float UUID cannot be set: %v", err)
-	}
 	d.SetId(uuid)
 
 	if err := resourceReadFloat(d, m); err != nil {

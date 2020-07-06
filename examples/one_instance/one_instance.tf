@@ -8,9 +8,17 @@ resource "shakenfist_instance" "sftest" {
     name = "sftest"
     cpus = 1
     memory = 1024
-    disks = [
-        "size=8,base=cirros,bus=ide,type=disk",
-        ]
+    disk {
+        size = 8
+        base = "cirros"
+        bus = "ide"
+        type = "disk"
+    }
+    disk {
+        size = 3
+        bus = "ide"
+        type = "disk"
+    }
     networks = [
         "uuid=${shakenfist_network.sf-net-1.id}",
         ]

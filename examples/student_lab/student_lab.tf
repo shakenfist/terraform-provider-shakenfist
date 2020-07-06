@@ -44,9 +44,12 @@ resource "shakenfist_instance" "jump" {
     name = "jump"
     cpus = 1
     memory = 1024
-    disks = [
-        "size=8,base=cirros,bus=ide,type=disk",
-        ]
+    disk {
+        size = 8
+        base = "cirros"
+        bus = "ide"
+        type = "disk"
+    }
     networks = [
         "uuid=${shakenfist_network.external.id}",
         ]
@@ -75,9 +78,12 @@ resource "shakenfist_instance" "target" {
     name = "target"
     cpus = 1
     memory = 1024
-    disks = [
-        "size=8,base=cirros,bus=ide,type=disk",
-        ]
+    disk {
+        size = 8
+        base = "cirros"
+        bus = "ide"
+        type = "disk"
+    }
     networks = [
         "uuid=${shakenfist_network.internal.id}",
         ]
