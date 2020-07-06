@@ -91,13 +91,16 @@ func resourceCreateNetwork(d *schema.ResourceData, m interface{}) error {
 		return fmt.Errorf("Unable to create network: %v", err)
 	}
 
-	d.Set("uuid", network.UUID)
+	if err := d.Set("uuid", network.UUID); err != nil {
+		return fmt.Errorf("UUID cannot be set: %v", err)
+	}
+
 	d.SetId(network.UUID)
 
 	// Set metadata on the network
 	for k, v := range d.Get("metadata").(map[string]interface{}) {
 		val, ok := v.(string)
-		if ok != true {
+		if !ok {
 			return fmt.Errorf("Tag value is not a string")
 		}
 
@@ -118,18 +121,30 @@ func resourceReadNetwork(d *schema.ResourceData, m interface{}) error {
 		return fmt.Errorf("Unable to retrieve network: %v", err)
 	}
 
-	d.Set("uuid", network.UUID)
-	d.Set("name", network.Name)
-	d.Set("netblock", network.NetBlock)
-	d.Set("provide_dhcp", network.ProvideDHCP)
-	d.Set("provide_nat", network.ProvideNAT)
+	if err := d.Set("uuid", network.UUID); err != nil {
+		return fmt.Errorf("Network UUID cannot be set: %v", err)
+	}
+	if err := d.Set("name", network.Name); err != nil {
+		return fmt.Errorf("Network Name cannot be set: %v", err)
+	}
+	if err := d.Set("netblock", network.NetBlock); err != nil {
+		return fmt.Errorf("Network NetBlock cannot be set: %v", err)
+	}
+	if err := d.Set("provide_dhcp", network.ProvideDHCP); err != nil {
+		return fmt.Errorf("Network ProvideDHCP flag cannot be set: %v", err)
+	}
+	if err := d.Set("provide_nat", network.ProvideNAT); err != nil {
+		return fmt.Errorf("Network ProvideNAT flag cannot be set: %v", err)
+	}
 
 	// Retrieve metadata
 	metadata, err := apiClient.GetNetworkMetadata(d.Id())
 	if err != nil {
 		return fmt.Errorf("ReadInstance unable to retrieve metadata: %v", err)
 	}
-	d.Set("metadata", metadata)
+	if err := d.Set("metadata", metadata); err != nil {
+		return fmt.Errorf("Network Metadata cannot be set: %v", err)
+	}
 
 	return nil
 }

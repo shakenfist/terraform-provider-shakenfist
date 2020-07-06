@@ -155,13 +155,15 @@ func resourceCreateInstance(d *schema.ResourceData, m interface{}) error {
 	}
 
 	// Signal to TF that the instance exists by setting the ID.
-	d.Set("uuid", inst.UUID)
+	if err := d.Set("uuid", inst.UUID); err != nil {
+		return fmt.Errorf("Instance UUID cannot be set: %v", err)
+	}
 	d.SetId(inst.UUID)
 
 	// Set metadata on the instance
 	for k, v := range d.Get("metadata").(map[string]interface{}) {
 		val, ok := v.(string)
-		if ok != true {
+		if !ok {
 			return fmt.Errorf("Tag value is not a string")
 		}
 
@@ -182,30 +184,55 @@ func resourceReadInstance(d *schema.ResourceData, m interface{}) error {
 		return fmt.Errorf("Unable to retrieve instance: %v", err)
 	}
 
-	d.Set("uuid", inst.UUID)
-	d.Set("name", inst.Name)
-	d.Set("cpus", inst.CPUs)
-	d.Set("memory", inst.Memory)
-	d.Set("disks", inst.DiskSpecs)
-	d.Set("ssh_key", inst.SSHKey)
-	d.Set("node", inst.Node)
-	d.Set("console_port", inst.ConsolePort)
-	d.Set("vdi_port", inst.VDIPort)
-	d.Set("user_data", inst.UserData)
+	if err := d.Set("uuid", inst.UUID); err != nil {
+		return fmt.Errorf("Instance UUID cannot be set: %v", err)
+	}
+	if err := d.Set("name", inst.Name); err != nil {
+		return fmt.Errorf("Instance Name cannot be set: %v", err)
+	}
+	if err := d.Set("cpus", inst.CPUs); err != nil {
+		return fmt.Errorf("Instance CPUs cannot be set: %v", err)
+	}
+	if err := d.Set("memory", inst.Memory); err != nil {
+		return fmt.Errorf("Instance Memory cannot be set: %v", err)
+	}
+	if err := d.Set("disk", inst.DiskSpecs); err != nil {
+		return fmt.Errorf("Instance DiskSpecs cannot be set: %v", err)
+	}
+	if err := d.Set("ssh_key", inst.SSHKey); err != nil {
+		return fmt.Errorf("Instance SSHKey cannot be set: %v", err)
+	}
+	if err := d.Set("node", inst.Node); err != nil {
+		return fmt.Errorf("Instance Node cannot be set: %v", err)
+	}
+	if err := d.Set("console_port", inst.ConsolePort); err != nil {
+		return fmt.Errorf("Instance ConsolePort cannot be set: %v", err)
+	}
+	if err := d.Set("vdi_port", inst.VDIPort); err != nil {
+		return fmt.Errorf("Instance VDIPort cannot be set: %v", err)
+	}
+	if err := d.Set("user_data", inst.UserData); err != nil {
+		return fmt.Errorf("Instance UserData cannot be set: %v", err)
+	}
 
 	// Retrieve Interface UUID's
 	uuid, err := getInterfaceUUIDs(apiClient, d.Id())
 	if err != nil {
 		return fmt.Errorf("ReadInstance error: %v", err)
 	}
-	d.Set("interfaces", uuid)
+	if err := d.Set("interfaces", uuid); err != nil {
+		return fmt.Errorf("Instance Interfaces UUID cannot be set: %v", err)
+	}
 
 	// Retrieve metadata
 	metadata, err := apiClient.GetMetadata(client.TypeInstance, inst.UUID)
 	if err != nil {
 		return fmt.Errorf("ReadInstance unable to retrieve metadata: %v", err)
 	}
-	d.Set("metadata", metadata)
+
+	if err := d.Set("metadata", metadata); err != nil {
+		return fmt.Errorf("Instance Metadata cannot be set: %v", err)
+	}
 
 	return nil
 }
