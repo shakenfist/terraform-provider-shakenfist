@@ -52,6 +52,7 @@ resource "shakenfist_instance" "jump" {
     }
     networks = [
         "uuid=${shakenfist_network.external.id}",
+        "uuid=${shakenfist_network.internal.id}",
         ]
     metadata = {
         person = "old man"

@@ -4,6 +4,7 @@ package provider
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/hashicorp/terraform/helper/schema"
@@ -322,12 +323,23 @@ func resourceUpdateInstance(d *schema.ResourceData, m interface{}) error {
 	return nil
 }
 
+// getInterfaceUUIDS returns a list of network UUID's as connected to the
+// interfaces on the instance.
+//
+// The returned list uses the order as returned by the Shaken Fist server. This
+// is required for Terraform to accurately report UUID's to other resources eg.
+// Float resources.
 func getInterfaceUUIDs(apiClient *client.Client, instanceUUID string) ([]string, error) {
 	interfaces, err := apiClient.GetInstanceInterfaces(instanceUUID)
 	if err != nil {
 		return []string{}, fmt.Errorf(
 			"unable to retrieve instance interfaces: %v", err)
 	}
+
+	// Ensure ordering is the same as the Shaken Fist order.
+	sort.Slice(interfaces, func(i, j int) bool {
+		return interfaces[i].Order < interfaces[j].Order
+	})
 
 	var uuid []string
 	for _, i := range interfaces {

@@ -2,6 +2,10 @@
 #
 # Suggestions taken from:
 # https://github.com/terraform-providers/terraform-provider-aws/tree/master/aws
+#
+# For linter installation (in CI) see:
+# 	https://golangci-lint.run/usage/install/#ci-installation
+#
 
 
 GOFMT_FILES?=$$(find . -name '*.go' |grep -v vendor)
@@ -32,7 +36,6 @@ fmtcheck:
 	@sh -c "'$(CURDIR)/scripts/check_files_gofmt.sh'"
 
 lint:
-	# see https://golangci-lint.run/usage/install/#ci-installation
 	@golangci-lint run ./$(PKG_NAME)/...
 
 install-tools:

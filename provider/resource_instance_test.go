@@ -67,6 +67,12 @@ func TestAccShakenFistInstance(t *testing.T) {
 						"person": "old man",
 						"action": "screams into rock",
 					}),
+
+					testAccInterfaceOrder(resType+resName1, []string{
+						"external",
+						"second",
+						"third",
+					}),
 				),
 			},
 		},
@@ -127,6 +133,8 @@ func testAccResourceInstance2(randomName string) string {
 		}
 		networks = [
 			"uuid=${shakenfist_network.external.id}",
+			"uuid=${shakenfist_network.second.id}",
+			"uuid=${shakenfist_network.third.id}",
 			]
 		metadata = {
 			person = "old man"
@@ -141,6 +149,26 @@ func testAccResourceInstance2(randomName string) string {
 		provide_nat = false
 		metadata = {
 			purpose = "external"
+		}
+	}
+
+	resource "shakenfist_network" "second" {
+		name = "testacc-{name}-second"
+		netblock = "10.0.2.0/24"
+		provide_dhcp = true
+		provide_nat = false
+		metadata = {
+			purpose = "second"
+		}
+	}
+
+	resource "shakenfist_network" "third" {
+		name = "testacc-{name}-third"
+		netblock = "10.0.3.0/24"
+		provide_dhcp = true
+		provide_nat = false
+		metadata = {
+			purpose = "third net"
 		}
 	}`
 
@@ -221,6 +249,50 @@ func testAccCheckInstanceExists(n string, instance *client.Instance) resource.Te
 		}
 
 		*instance = resp
+
+		return nil
+	}
+}
+
+func testAccInterfaceOrder(n string, netOrder []string) resource.TestCheckFunc {
+
+	return func(s *terraform.State) error {
+		// Find the corresponding state object
+		rs, ok := s.RootModule().Resources[n]
+		if !ok {
+			return fmt.Errorf("Not found: %s", n)
+		}
+
+		// Retrieve the instance interfaces from the test setup
+		apiClient := testAccProvider.Meta().(*client.Client)
+		interfaces, err := apiClient.GetInstanceInterfaces(rs.Primary.ID)
+		if err != nil {
+			return fmt.Errorf("Instance (%s) interfaces cannot be retrieved: %v",
+				rs.Primary.ID, err)
+		}
+
+		// Build interface lookup table
+		iOrder := map[int]string{}
+		for _, i := range interfaces {
+			iOrder[i.Order] = i.NetworkUUID
+		}
+
+		// Test the expected Terraform network UUID's
+		for count, net := range netOrder {
+
+			// Get the Terraform network object
+			rs, ok := s.RootModule().Resources["shakenfist_network."+net]
+			if !ok {
+				return fmt.Errorf("Network not found: %s", net)
+			}
+
+			// Check the network UUID is set on the interface
+			if rs.Primary.ID != iOrder[count] {
+				return fmt.Errorf(
+					"Network (%s) is not on correct interface %d, have %s",
+					net, count, iOrder[count])
+			}
+		}
 
 		return nil
 	}
