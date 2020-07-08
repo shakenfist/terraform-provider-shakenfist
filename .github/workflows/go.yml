@@ -34,7 +34,9 @@ jobs:
       run: go build -v .
 
     - name: Lint
-      run: make lint
-      
+      run: |
+        make install-tools
+        make lint
+
     - name: Test
       run: make test
