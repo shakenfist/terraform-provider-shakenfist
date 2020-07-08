@@ -1,5 +1,6 @@
 Terraform Provider for Shaken Fist
 ==================================
+![Go](https://github.com/shakenfist/terraform-provider-shakenfist/workflows/Go/badge.svg)
 
 What is this?
 -------------
