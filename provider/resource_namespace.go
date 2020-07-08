@@ -18,8 +18,9 @@ func resourceNamespace() *schema.Resource {
 				ForceNew:    true,
 			},
 			"metadata": {
-				Type:     schema.TypeMap,
-				Optional: true,
+				Type:        schema.TypeMap,
+				Optional:    true,
+				Description: "Metadata utilising arbitrary keys",
 				Elem: &schema.Schema{
 					Type: schema.TypeString},
 			},

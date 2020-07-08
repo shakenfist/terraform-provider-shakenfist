@@ -101,8 +101,9 @@ func resourceInstance() *schema.Resource {
 				Description: "User data to pass to the instance via config drive, encoded as base64",
 			},
 			"metadata": {
-				Type:     schema.TypeMap,
-				Optional: true,
+				Type:        schema.TypeMap,
+				Optional:    true,
+				Description: "Metadata utilising arbitrary keys",
 				Elem: &schema.Schema{
 					Type: schema.TypeString},
 			},
