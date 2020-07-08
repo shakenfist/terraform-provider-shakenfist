@@ -1,6 +1,5 @@
 provider "shakenfist" {
-    hostname = "sf-1"
-    port = 13000
+    server_url = "http://sf-1:13000"
     namespace = "testspace"
     key = "secret"
 }
@@ -9,9 +8,17 @@ resource "shakenfist_instance" "sftest" {
     name = "sftest"
     cpus = 1
     memory = 1024
-    disks = [
-        "size=8,base=cirros,bus=ide,type=disk",
-        ]
+    disk {
+        size = 8
+        base = "cirros"
+        bus = "ide"
+        type = "disk"
+    }
+    disk {
+        size = 3
+        bus = "ide"
+        type = "disk"
+    }
     networks = [
         "uuid=${shakenfist_network.sf-net-1.id}",
         ]

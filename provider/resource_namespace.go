@@ -46,7 +46,7 @@ func resourceCreateNamespace(d *schema.ResourceData, m interface{}) error {
 	// Set metadata on namespace
 	for k, v := range d.Get("metadata").(map[string]interface{}) {
 		val, ok := v.(string)
-		if ok != true {
+		if !ok {
 			return fmt.Errorf("Tag value is not a string")
 		}
 
@@ -69,7 +69,9 @@ func resourceReadNamespace(d *schema.ResourceData, m interface{}) error {
 	if err != nil {
 		return fmt.Errorf("ReadNamespace unable to retrieve metadata: %v", err)
 	}
-	d.Set("metadata", metadata)
+	if err := d.Set("metadata", metadata); err != nil {
+		return fmt.Errorf("Namespace Metadata cannot be set: %v", err)
+	}
 
 	return nil
 }

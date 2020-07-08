@@ -46,7 +46,6 @@ func resourceCreateFloat(d *schema.ResourceData, m interface{}) error {
 		return fmt.Errorf("Unable to float interface: %v", err)
 	}
 
-	d.Set("uuid", uuid)
 	d.SetId(uuid)
 
 	if err := resourceReadFloat(d, m); err != nil {
@@ -68,7 +67,10 @@ func resourceReadFloat(d *schema.ResourceData, m interface{}) error {
 		return fmt.Errorf("Interface does not have a floating IP")
 	}
 
-	d.Set("ipv4", iface.Floating)
+	if err := d.Set("ipv4", iface.Floating); err != nil {
+		return fmt.Errorf("Float IPv4 cannot be set: %v", err)
+	}
+
 	return nil
 }
 

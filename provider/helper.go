@@ -39,7 +39,7 @@ func updateMetadata(
 	}
 
 	// Find deleted metadata keys
-	for key, _ := range oldMeta {
+	for key := range oldMeta {
 		if _, exists := newMeta[key]; !exists {
 			err = apiClient.DeleteMetadata(resType, d.Id(), key)
 			if err != nil {

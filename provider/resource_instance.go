@@ -4,7 +4,7 @@ package provider
 
 import (
 	"fmt"
-	"strconv"
+	"sort"
 	"strings"
 
 	"github.com/hashicorp/terraform/helper/schema"
@@ -38,12 +38,36 @@ func resourceInstance() *schema.Resource {
 				Description: "The amount of RAM for the instance in GB",
 				ForceNew:    true,
 			},
-			"disks": {
+			"disk": {
 				Type:     schema.TypeList,
-				Required: true,
-				ForceNew: true,
-				Elem: &schema.Schema{
-					Type: schema.TypeString,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"size": {
+							Type:        schema.TypeInt,
+							Required:    true,
+							ForceNew:    true,
+							Description: "Size of disk in GB",
+						},
+						"base": {
+							Type:        schema.TypeString,
+							Optional:    true,
+							ForceNew:    true,
+							Description: "URL of disk image (or shortcut)",
+						},
+						"bus": {
+							Type:        schema.TypeString,
+							Required:    true,
+							ForceNew:    true,
+							Description: "Bus type of disk",
+						},
+						"type": {
+							Type:        schema.TypeString,
+							Required:    true,
+							ForceNew:    true,
+							Description: "Type of disk",
+						},
+					},
 				},
 			},
 			"networks": {
@@ -56,7 +80,6 @@ func resourceInstance() *schema.Resource {
 			},
 			"interfaces": {
 				Type:     schema.TypeList,
-				Optional: true,
 				Computed: true,
 				Elem: &schema.Schema{
 					Type: schema.TypeString,
@@ -64,13 +87,16 @@ func resourceInstance() *schema.Resource {
 			},
 			"ssh_key": {
 				Type:        schema.TypeString,
-				Optional:    true,
 				Computed:    true,
 				Description: "The ssh key to embed into the instance via config drive",
 			},
+			"node": {
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "Shaken Fist node running this instance",
+			},
 			"user_data": {
 				Type:        schema.TypeString,
-				Optional:    true,
 				Computed:    true,
 				Description: "User data to pass to the instance via config drive, encoded as base64",
 			},
@@ -79,6 +105,21 @@ func resourceInstance() *schema.Resource {
 				Optional: true,
 				Elem: &schema.Schema{
 					Type: schema.TypeString},
+			},
+			"console_port": {
+				Type:        schema.TypeInt,
+				Computed:    true,
+				Description: "Console port number",
+			},
+			"vdi_port": {
+				Type:        schema.TypeInt,
+				Computed:    true,
+				Description: "VDI port number",
+			},
+			"state": {
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "State of the instance",
 			},
 		},
 		Create: resourceCreateInstance,
@@ -98,26 +139,16 @@ func resourceCreateInstance(d *schema.ResourceData, m interface{}) error {
 	var disks []client.DiskSpec
 	var err error
 
-	for _, disk := range d.Get("disks").([]interface{}) {
-		var diskSpec client.DiskSpec
-		for _, diskElem := range strings.Split(disk.(string), ",") {
-			e := strings.Split(diskElem, "=")
-			if e[0] == "base" {
-				diskSpec.Base = e[1]
-			} else if e[0] == "size" {
-				diskSpec.Size, err = strconv.Atoi(e[1])
-				if err != nil {
-					return fmt.Errorf("Disk size is not numeric: %v", err)
-				}
-			} else if e[0] == "bus" {
-				diskSpec.Bus = e[1]
-			} else if e[0] == "type" {
-				diskSpec.Type = e[1]
-			} else {
-				return fmt.Errorf("Incorrect disk spec, should be one of "+
-					"\"base\", \"size\", \"bus\", \"type\": %s", e[0])
-			}
+	for _, d := range d.Get("disk").([]interface{}) {
+		disk := d.(map[string]interface{})
+
+		diskSpec := client.DiskSpec{
+			Base: disk["base"].(string),
+			Size: disk["size"].(int),
+			Bus:  disk["bus"].(string),
+			Type: disk["type"].(string),
 		}
+
 		disks = append(disks, diskSpec)
 	}
 
@@ -155,13 +186,15 @@ func resourceCreateInstance(d *schema.ResourceData, m interface{}) error {
 	}
 
 	// Signal to TF that the instance exists by setting the ID.
-	d.Set("uuid", inst.UUID)
+	if err := d.Set("uuid", inst.UUID); err != nil {
+		return fmt.Errorf("Instance UUID cannot be set: %v", err)
+	}
 	d.SetId(inst.UUID)
 
 	// Set metadata on the instance
 	for k, v := range d.Get("metadata").(map[string]interface{}) {
 		val, ok := v.(string)
-		if ok != true {
+		if !ok {
 			return fmt.Errorf("Tag value is not a string")
 		}
 
@@ -182,30 +215,68 @@ func resourceReadInstance(d *schema.ResourceData, m interface{}) error {
 		return fmt.Errorf("Unable to retrieve instance: %v", err)
 	}
 
-	d.Set("uuid", inst.UUID)
-	d.Set("name", inst.Name)
-	d.Set("cpus", inst.CPUs)
-	d.Set("memory", inst.Memory)
-	d.Set("disks", inst.DiskSpecs)
-	d.Set("ssh_key", inst.SSHKey)
-	d.Set("node", inst.Node)
-	d.Set("console_port", inst.ConsolePort)
-	d.Set("vdi_port", inst.VDIPort)
-	d.Set("user_data", inst.UserData)
+	if err := d.Set("uuid", inst.UUID); err != nil {
+		return fmt.Errorf("Instance UUID cannot be set: %v", err)
+	}
+	if err := d.Set("name", inst.Name); err != nil {
+		return fmt.Errorf("Instance Name cannot be set: %v", err)
+	}
+	if err := d.Set("cpus", inst.CPUs); err != nil {
+		return fmt.Errorf("Instance CPUs cannot be set: %v", err)
+	}
+	if err := d.Set("memory", inst.Memory); err != nil {
+		return fmt.Errorf("Instance Memory cannot be set: %v", err)
+	}
+
+	var disks []map[string]interface{}
+	for _, d := range inst.DiskSpecs {
+		disks = append(disks, map[string]interface{}{
+			"size": d.Size,
+			"base": d.Base,
+			"bus":  d.Bus,
+			"type": d.Type,
+		})
+	}
+	if err := d.Set("disk", disks); err != nil {
+		return fmt.Errorf("Instance DiskSpecs cannot be set: %v", err)
+	}
+
+	if err := d.Set("ssh_key", inst.SSHKey); err != nil {
+		return fmt.Errorf("Instance SSHKey cannot be set: %v", err)
+	}
+	if err := d.Set("node", inst.Node); err != nil {
+		return fmt.Errorf("Instance Node cannot be set: %v", err)
+	}
+	if err := d.Set("console_port", inst.ConsolePort); err != nil {
+		return fmt.Errorf("Instance ConsolePort cannot be set: %v", err)
+	}
+	if err := d.Set("vdi_port", inst.VDIPort); err != nil {
+		return fmt.Errorf("Instance VDIPort cannot be set: %v", err)
+	}
+	if err := d.Set("user_data", inst.UserData); err != nil {
+		return fmt.Errorf("Instance UserData cannot be set: %v", err)
+	}
+	if err := d.Set("state", inst.State); err != nil {
+		return fmt.Errorf("Instance State cannot be set: %v", err)
+	}
 
 	// Retrieve Interface UUID's
 	uuid, err := getInterfaceUUIDs(apiClient, d.Id())
 	if err != nil {
 		return fmt.Errorf("ReadInstance error: %v", err)
 	}
-	d.Set("interfaces", uuid)
+	if err := d.Set("interfaces", uuid); err != nil {
+		return fmt.Errorf("Instance Interfaces UUID cannot be set: %v", err)
+	}
 
 	// Retrieve metadata
 	metadata, err := apiClient.GetMetadata(client.TypeInstance, inst.UUID)
 	if err != nil {
 		return fmt.Errorf("ReadInstance unable to retrieve metadata: %v", err)
 	}
-	d.Set("metadata", metadata)
+	if err := d.Set("metadata", metadata); err != nil {
+		return fmt.Errorf("Instance Metadata cannot be set: %v", err)
+	}
 
 	return nil
 }
@@ -252,12 +323,23 @@ func resourceUpdateInstance(d *schema.ResourceData, m interface{}) error {
 	return nil
 }
 
+// getInterfaceUUIDS returns a list of network UUID's as connected to the
+// interfaces on the instance.
+//
+// The returned list uses the order as returned by the Shaken Fist server. This
+// is required for Terraform to accurately report UUID's to other resources eg.
+// Float resources.
 func getInterfaceUUIDs(apiClient *client.Client, instanceUUID string) ([]string, error) {
 	interfaces, err := apiClient.GetInstanceInterfaces(instanceUUID)
 	if err != nil {
 		return []string{}, fmt.Errorf(
 			"unable to retrieve instance interfaces: %v", err)
 	}
+
+	// Ensure ordering is the same as the Shaken Fist order.
+	sort.Slice(interfaces, func(i, j int) bool {
+		return interfaces[i].Order < interfaces[j].Order
+	})
 
 	var uuid []string
 	for _, i := range interfaces {
