@@ -27,6 +27,7 @@ func Provider() terraform.ResourceProvider {
 			"key": {
 				Type:        schema.TypeString,
 				Required:    true,
+				Sensitive:   true,
 				DefaultFunc: schema.EnvDefaultFunc("SHAKENFIST_KEY", ""),
 			},
 		},

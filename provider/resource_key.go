@@ -26,6 +26,7 @@ func resourceKey() *schema.Resource {
 			"key": {
 				Type:        schema.TypeString,
 				Required:    true,
+				Sensitive:   true,
 				Description: "The access key",
 			},
 		},
