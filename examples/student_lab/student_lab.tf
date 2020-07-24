@@ -50,6 +50,10 @@ resource "shakenfist_instance" "jump" {
         bus = "ide"
         type = "disk"
     }
+    video {
+        model = "cirrus"
+        memory = 16384
+    }
     networks = [
         "uuid=${shakenfist_network.external.id}",
         "uuid=${shakenfist_network.internal.id}",
@@ -84,6 +88,10 @@ resource "shakenfist_instance" "target" {
         base = "cirros"
         bus = "ide"
         type = "disk"
+    }
+    video {
+        model = "cirrus"
+        memory = 16384
     }
     networks = [
         "uuid=${shakenfist_network.internal.id}",

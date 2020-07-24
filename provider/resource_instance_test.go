@@ -46,6 +46,11 @@ func TestAccShakenFistInstance(t *testing.T) {
 					resource.TestCheckResourceAttrSet(
 						resType+resName1, "state"),
 
+					testAccInstanceVideo(resType+resName1, client.VideoSpec{
+						Model:  "cirrus",
+						Memory: 16384,
+					}),
+
 					testAccInstanceMetadata(resType+resName1, map[string]string{
 						"person": "old man",
 						"action": "shakes fist",
@@ -91,6 +96,10 @@ func testAccResourceInstance1(randomName string) string {
 			bus = "ide"
 			type = "disk"
 		}
+		video {
+			model = "cirrus"
+			memory = 16384
+		}
 		networks = [
 			"uuid=${shakenfist_network.external.id}",
 			]
@@ -130,6 +139,10 @@ func testAccResourceInstance2(randomName string) string {
 			size = 1
 			bus = "ide"
 			type = "disk"
+		}
+		video {
+			model = "cirrus"
+			memory = 16384
 		}
 		networks = [
 			"uuid=${shakenfist_network.external.id}",
@@ -205,6 +218,33 @@ func testAccInstanceValues(actual *client.Instance,
 		if strconv.Itoa(actual.Memory) != tf["memory"] {
 			return fmt.Errorf("Incorrect memory: %d != %s",
 				actual.Memory, tf["memory"])
+		}
+
+		return nil
+	}
+}
+
+func testAccInstanceVideo(
+	n string, correctVideo client.VideoSpec) resource.TestCheckFunc {
+
+	return func(s *terraform.State) error {
+		// Find the corresponding state object
+		rs, ok := s.RootModule().Resources[n]
+		if !ok {
+			return fmt.Errorf("Not found: %s", n)
+		}
+
+		// Retrieve the configured instance from the test setup
+		apiClient := testAccProvider.Meta().(*client.Client)
+		inst, err := apiClient.GetInstance(rs.Primary.ID)
+		if err != nil {
+			return fmt.Errorf("Instance (%s) cannot be retrieved: %v",
+				rs.Primary.ID, err)
+		}
+
+		if inst.Video != correctVideo {
+			return fmt.Errorf("Instance video is %v but should be %v",
+				inst.Video, correctVideo)
 		}
 
 		return nil

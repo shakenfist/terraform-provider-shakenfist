@@ -19,6 +19,10 @@ resource "shakenfist_instance" "sftest" {
         bus = "ide"
         type = "disk"
     }
+    video {
+        model = "cirrus"
+        memory = 16384
+    }
     networks = [
         "uuid=${shakenfist_network.sf-net-1.id}",
         ]

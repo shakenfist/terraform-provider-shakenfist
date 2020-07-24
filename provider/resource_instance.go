@@ -70,6 +70,26 @@ func resourceInstance() *schema.Resource {
 					},
 				},
 			},
+			"video": {
+				Type:     schema.TypeList,
+				Required: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"memory": {
+							Type:        schema.TypeInt,
+							Required:    true,
+							ForceNew:    true,
+							Description: "The amount of video card RAM in KB",
+						},
+						"model": {
+							Type:        schema.TypeString,
+							Required:    true,
+							ForceNew:    true,
+							Description: "The video card model",
+						},
+					},
+				},
+			},
 			"networks": {
 				Type:     schema.TypeList,
 				Required: true,
@@ -173,9 +193,19 @@ func resourceCreateInstance(d *schema.ResourceData, m interface{}) error {
 		networks = append(networks, netSpec)
 	}
 
-	inst, err := apiClient.CreateInstance(d.Get("name").(string), d.Get("cpus").(int),
-		d.Get("memory").(int), networks, disks, d.Get("ssh_key").(string),
-		d.Get("user_data").(string))
+	videoConf := d.Get("video").([]interface{})
+	if len(videoConf) != 1 {
+		return fmt.Errorf("Instances only accept one video card ")
+	}
+	v := videoConf[0].(map[string]interface{})
+	video := client.VideoSpec{
+		Model:  v["model"].(string),
+		Memory: v["memory"].(int),
+	}
+
+	inst, err := apiClient.CreateInstance(d.Get("name").(string),
+		d.Get("cpus").(int), d.Get("memory").(int), networks, disks, video,
+		d.Get("ssh_key").(string), d.Get("user_data").(string))
 	if err != nil {
 		return fmt.Errorf("Unable to create instance: %v", err)
 	}
@@ -239,6 +269,16 @@ func resourceReadInstance(d *schema.ResourceData, m interface{}) error {
 	}
 	if err := d.Set("disk", disks); err != nil {
 		return fmt.Errorf("Instance DiskSpecs cannot be set: %v", err)
+	}
+
+	video := []map[string]interface{}{
+		{
+			"model":  inst.Video.Model,
+			"memory": inst.Video.Memory,
+		},
+	}
+	if err := d.Set("video", video); err != nil {
+		return fmt.Errorf("Instance Video cannot be set: %v", err)
 	}
 
 	if err := d.Set("ssh_key", inst.SSHKey); err != nil {
