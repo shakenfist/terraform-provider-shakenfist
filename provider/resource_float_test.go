@@ -44,6 +44,10 @@ func testAccResourceFloat(randomName string) string {
 			bus = "ide"
 			type = "disk"
 		}
+		video {
+			model = "cirrus"
+			memory = 16384
+		}
 		networks = [
 			"uuid=${shakenfist_network.external.id}",
 			]
