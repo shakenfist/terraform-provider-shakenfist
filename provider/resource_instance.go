@@ -87,7 +87,8 @@ func resourceInstance() *schema.Resource {
 			},
 			"ssh_key": {
 				Type:        schema.TypeString,
-				Computed:    true,
+				Optional:    true,
+				ForceNew:    true,
 				Description: "The ssh key to embed into the instance via config drive",
 			},
 			"node": {
@@ -97,7 +98,8 @@ func resourceInstance() *schema.Resource {
 			},
 			"user_data": {
 				Type:        schema.TypeString,
-				Computed:    true,
+				Optional:    true,
+				ForceNew:    true,
 				Description: "User data to pass to the instance via config drive, encoded as base64",
 			},
 			"metadata": {
