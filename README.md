@@ -1,6 +1,6 @@
 Terraform Provider for Shaken Fist
 ==================================
-![Go](https://github.com/shakenfist/terraform-provider-shakenfist/workflows/Go/badge.svg)
+![Go](https://github.com/shakenfist/terraform-provider-shakenfist/workflows/Go/badge.svg)  ![golangci-lint](https://github.com/shakenfist/terraform-provider-shakenfist/workflows/golangci-lint/badge.svg)
 
 What is this?
 -------------
