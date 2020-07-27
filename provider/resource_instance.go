@@ -72,19 +72,21 @@ func resourceInstance() *schema.Resource {
 			},
 			"video": {
 				Type:     schema.TypeList,
-				Required: true,
+				Optional: true,
 				Elem: &schema.Resource{
 					Schema: map[string]*schema.Schema{
 						"memory": {
 							Type:        schema.TypeInt,
-							Required:    true,
+							Optional:    true,
 							ForceNew:    true,
+							Default:     16384,
 							Description: "The amount of video card RAM in KB",
 						},
 						"model": {
 							Type:        schema.TypeString,
-							Required:    true,
+							Optional:    true,
 							ForceNew:    true,
+							Default:     "cirrus",
 							Description: "The video card model",
 						},
 					},
@@ -196,13 +198,17 @@ func resourceCreateInstance(d *schema.ResourceData, m interface{}) error {
 	}
 
 	videoConf := d.Get("video").([]interface{})
-	if len(videoConf) != 1 {
+	if len(videoConf) > 1 {
 		return fmt.Errorf("Instances only accept one video card ")
 	}
-	v := videoConf[0].(map[string]interface{})
-	video := client.VideoSpec{
-		Model:  v["model"].(string),
-		Memory: v["memory"].(int),
+	video := client.VideoSpec{}
+	if len(videoConf) == 0 {
+		video.Model = "cirrus"
+		video.Memory = 16384
+	} else {
+		v := videoConf[0].(map[string]interface{})
+		video.Model = v["model"].(string)
+		video.Memory = v["memory"].(int)
 	}
 
 	inst, err := apiClient.CreateInstance(d.Get("name").(string),
