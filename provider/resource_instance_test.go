@@ -51,6 +51,15 @@ func TestAccShakenFistInstance(t *testing.T) {
 						Memory: 16384,
 					}),
 
+					testAccInstanceNetwork(resType+resName1,
+						[]client.NetworkSpec{
+							{
+								MACAddress: "12:34:56:78:9a:bc",
+								Model:      "e1000",
+								Address:    "10.0.2.100",
+							},
+						}),
+
 					testAccInstanceMetadata(resType+resName1, map[string]string{
 						"person": "old man",
 						"action": "shakes fist",
@@ -100,9 +109,12 @@ func testAccResourceInstance1(randomName string) string {
 			model = "cirrus"
 			memory = 16384
 		}
-		networks = [
-			"uuid=${shakenfist_network.external.id}",
-			]
+		network {
+			network_uuid = shakenfist_network.external.id
+			mac = "12:34:56:78:9a:bc"
+			model = "e1000"
+			ipv4 = "10.0.2.100"
+		}
 		metadata = {
 			person = "old man"
 			action = "shakes fist"
@@ -144,11 +156,15 @@ func testAccResourceInstance2(randomName string) string {
 			model = "cirrus"
 			memory = 16384
 		}
-		networks = [
-			"uuid=${shakenfist_network.external.id}",
-			"uuid=${shakenfist_network.second.id}",
-			"uuid=${shakenfist_network.third.id}",
-			]
+		network {
+			network_uuid = shakenfist_network.external.id
+		}
+		network {
+			network_uuid = shakenfist_network.second.id
+		}
+		network {
+			network_uuid = shakenfist_network.third.id
+		}
 		metadata = {
 			person = "old man"
 			action = "screams into rock"
@@ -294,7 +310,8 @@ func testAccCheckInstanceExists(n string, instance *client.Instance) resource.Te
 	}
 }
 
-func testAccInterfaceOrder(n string, netOrder []string) resource.TestCheckFunc {
+func testAccInterfaceOrder(n string,
+	netOrder []string) resource.TestCheckFunc {
 
 	return func(s *terraform.State) error {
 		// Find the corresponding state object
@@ -307,7 +324,8 @@ func testAccInterfaceOrder(n string, netOrder []string) resource.TestCheckFunc {
 		apiClient := testAccProvider.Meta().(*client.Client)
 		interfaces, err := apiClient.GetInstanceInterfaces(rs.Primary.ID)
 		if err != nil {
-			return fmt.Errorf("Instance (%s) interfaces cannot be retrieved: %v",
+			return fmt.Errorf(
+				"Instance (%s) interfaces cannot be retrieved: %v",
 				rs.Primary.ID, err)
 		}
 
@@ -331,6 +349,50 @@ func testAccInterfaceOrder(n string, netOrder []string) resource.TestCheckFunc {
 				return fmt.Errorf(
 					"Network (%s) is not on correct interface %d, have %s",
 					net, count, iOrder[count])
+			}
+		}
+
+		return nil
+	}
+}
+
+func testAccInstanceNetwork(n string,
+	correctNets []client.NetworkSpec) resource.TestCheckFunc {
+
+	return func(s *terraform.State) error {
+		// Find the corresponding state object
+		rs, ok := s.RootModule().Resources[n]
+		if !ok {
+			return fmt.Errorf("Not found: %s", n)
+		}
+
+		// Retrieve the configured instance from the test setup
+		apiClient := testAccProvider.Meta().(*client.Client)
+		interfaces, err := apiClient.GetInstanceInterfaces(rs.Primary.ID)
+		if err != nil {
+			return fmt.Errorf("Instance (%s) cannot be retrieved: %v",
+				rs.Primary.ID, err)
+		}
+
+		countActual := len(interfaces)
+		countCorrect := len(correctNets)
+		if countActual != countCorrect {
+			return fmt.Errorf("Got %d interfaces, expected %d interfaces",
+				countActual, countCorrect)
+		}
+
+		for i, actual := range interfaces {
+			if actual.IPv4 != correctNets[i].Address {
+				return fmt.Errorf("IP address is %s but should be %s",
+					actual.IPv4, correctNets[i].Address)
+			}
+			if actual.MACAddress != correctNets[i].MACAddress {
+				return fmt.Errorf("MAC address is %s but should be %s",
+					actual.MACAddress, correctNets[i].MACAddress)
+			}
+			if actual.Model != correctNets[i].Model {
+				return fmt.Errorf("Model is %s but should be %s",
+					actual.Model, correctNets[i].Model)
 			}
 		}
 

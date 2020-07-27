@@ -17,13 +17,15 @@ func validateNetblock(v interface{}, k string) ([]string, []error) {
 
 	value, ok := v.(string)
 	if !ok {
-		errs = append(errs, fmt.Errorf("Expected name to be string"))
+		errs = append(errs, fmt.Errorf("Expected netblock to be a string"))
 		return warns, errs
 	}
 
-	netblock := regexp.MustCompile(`^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/[0-9]+$`)
+	netblock := regexp.MustCompile(
+		`^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}/[0-9]{1,3}$`)
 	if !netblock.Match([]byte(value)) {
-		errs = append(errs, fmt.Errorf("Netblock must be IPv4 CIDR. Got %s", value))
+		errs = append(errs,
+			fmt.Errorf("Netblock must be IPv4 CIDR. Got %s", value))
 		return warns, errs
 	}
 	return warns, errs

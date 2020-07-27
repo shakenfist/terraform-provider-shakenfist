@@ -4,6 +4,7 @@ package provider
 
 import (
 	"fmt"
+	"regexp"
 	"sort"
 	"strings"
 
@@ -90,26 +91,61 @@ func resourceInstance() *schema.Resource {
 					},
 				},
 			},
-			"networks": {
+			"network": {
 				Type:     schema.TypeList,
-				Required: true,
-				ForceNew: true,
-				Elem: &schema.Schema{
-					Type: schema.TypeString,
-				},
-			},
-			"interfaces": {
-				Type:     schema.TypeList,
-				Computed: true,
-				Elem: &schema.Schema{
-					Type: schema.TypeString,
+				Optional: true,
+				Elem: &schema.Resource{
+					Schema: map[string]*schema.Schema{
+						"network_uuid": {
+							Type:        schema.TypeString,
+							Required:    true,
+							ForceNew:    true,
+							Description: "The UUID of the network",
+						},
+						"ipv4": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ForceNew: true,
+							Computed: true,
+							Description: "The " +
+								"IPv4 address of the network interface",
+							ValidateFunc: validateIPAddr,
+						},
+						"mac": {
+							Type:     schema.TypeString,
+							Optional: true,
+							ForceNew: true,
+							Computed: true,
+							Description: "The " +
+								"MAC address of the network interface",
+							ValidateFunc: validateMAC,
+						},
+						"model": {
+							Type:        schema.TypeString,
+							Optional:    true,
+							ForceNew:    true,
+							Computed:    true,
+							Description: "The model of the network interface",
+						},
+						"interface_uuid": {
+							Type:        schema.TypeString,
+							Computed:    true,
+							Description: "The UUID of the network interface",
+						},
+						"state": {
+							Type:        schema.TypeString,
+							Computed:    true,
+							Description: "The state of the network interface",
+						},
+					},
 				},
 			},
 			"ssh_key": {
-				Type:        schema.TypeString,
-				Optional:    true,
-				ForceNew:    true,
-				Description: "The ssh key to embed into the instance via config drive",
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				Description: "The " +
+					"ssh key to embed into the instance via config drive",
 			},
 			"node": {
 				Type:        schema.TypeString,
@@ -117,10 +153,11 @@ func resourceInstance() *schema.Resource {
 				Description: "Shaken Fist node running this instance",
 			},
 			"user_data": {
-				Type:        schema.TypeString,
-				Optional:    true,
-				ForceNew:    true,
-				Description: "User data to pass to the instance via config drive, encoded as base64",
+				Type:     schema.TypeString,
+				Optional: true,
+				ForceNew: true,
+				Description: "User data to pass " +
+					"to the instance via config drive, encoded as base64",
 			},
 			"metadata": {
 				Type:     schema.TypeMap,
@@ -155,6 +192,48 @@ func resourceInstance() *schema.Resource {
 	}
 }
 
+func validateIPAddr(v interface{}, k string) ([]string, []error) {
+	var errs []error
+	var warns []string
+
+	value, ok := v.(string)
+	if !ok {
+		errs = append(errs, fmt.Errorf("Expected IP address to be a string"))
+		return warns, errs
+	}
+
+	netblock := regexp.MustCompile(
+		`^[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}$`)
+	if !netblock.Match([]byte(value)) {
+		errs = append(errs,
+			fmt.Errorf("Netblock must be IPv4 address. Got %s", value))
+		return warns, errs
+	}
+	return warns, errs
+}
+
+func validateMAC(v interface{}, k string) ([]string, []error) {
+	var errs []error
+	var warns []string
+
+	value, ok := v.(string)
+	if !ok {
+		errs = append(errs, fmt.Errorf("Expected MAC address to be a string"))
+		return warns, errs
+	}
+
+	netblock := regexp.MustCompile(
+		`^[0-9a-fA-F]{2}\:[0-9a-fA-F]{2}\:[0-9a-fA-F]{2}\:` +
+			`[0-9a-fA-F]{2}\:[0-9a-fA-F]{2}\:[0-9a-fA-F]{2}$`)
+	if !netblock.Match([]byte(value)) {
+		errs = append(errs,
+			fmt.Errorf("MAC address must be a valid MAC. Got %s", value))
+		return warns, errs
+	}
+
+	return warns, errs
+}
+
 func resourceCreateInstance(d *schema.ResourceData, m interface{}) error {
 	apiClient := m.(*client.Client)
 
@@ -175,23 +254,23 @@ func resourceCreateInstance(d *schema.ResourceData, m interface{}) error {
 	}
 
 	var networks []client.NetworkSpec
-	for _, net := range d.Get("networks").([]interface{}) {
-		var netSpec client.NetworkSpec
-		for _, netElem := range strings.Split(net.(string), ",") {
-			e := strings.Split(netElem, "=")
-			if e[0] == "uuid" {
-				netSpec.NetworkUUID = e[1]
-			} else if e[0] == "address" {
-				netSpec.Address = e[1]
-			} else if e[0] == "macaddress" {
-				netSpec.MACAddress = e[1]
-			} else if e[0] == "model" {
-				netSpec.Model = e[1]
-			} else {
-				return fmt.Errorf("Incorrect network type, should be one of "+
-					"\"uuid\", \"address\", \"macaddress\", \"model\": %s", e[0])
-			}
+	for _, n := range d.Get("network").([]interface{}) {
+		net := n.(map[string]interface{})
+
+		netSpec := client.NetworkSpec{
+			NetworkUUID: net["network_uuid"].(string),
 		}
+
+		if v, ok := net["ipv4"]; ok {
+			netSpec.Address = v.(string)
+		}
+		if v, ok := net["mac"]; ok {
+			netSpec.MACAddress = v.(string)
+		}
+		if v, ok := net["model"]; ok {
+			netSpec.Model = v.(string)
+		}
+
 		networks = append(networks, netSpec)
 	}
 
@@ -307,8 +386,26 @@ func resourceReadInstance(d *schema.ResourceData, m interface{}) error {
 	if err != nil {
 		return fmt.Errorf("ReadInstance error: %v", err)
 	}
-	if err := d.Set("interfaces", uuid); err != nil {
-		return fmt.Errorf("Instance Interfaces UUID cannot be set: %v", err)
+
+	var networks []map[string]interface{}
+	for _, u := range uuid {
+		n, err := apiClient.GetInterface(u)
+		if err != nil {
+			return fmt.Errorf("Cannot retrieve interface: %v", err)
+		}
+
+		networks = append(networks, map[string]interface{}{
+			"network_uuid":   n.NetworkUUID,
+			"ipv4":           n.IPv4,
+			"mac":            n.MACAddress,
+			"model":          n.Model,
+			"interface_uuid": n.UUID,
+			"state":          n.State,
+		})
+	}
+
+	if err := d.Set("network", networks); err != nil {
+		return fmt.Errorf("Instance networks cannot be set: %v", err)
 	}
 
 	// Retrieve metadata
