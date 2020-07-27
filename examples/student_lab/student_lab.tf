@@ -54,10 +54,12 @@ resource "shakenfist_instance" "jump" {
         model = "cirrus"
         memory = 16384
     }
-    networks = [
-        "uuid=${shakenfist_network.external.id}",
-        "uuid=${shakenfist_network.internal.id}",
-        ]
+    network {
+        network_uuid = shakenfist_network.external.id
+    }
+    network {
+        network_uuid = shakenfist_network.internal.id
+    }
     metadata = {
         person = "old man"
         action = "shakes fist"
@@ -65,7 +67,7 @@ resource "shakenfist_instance" "jump" {
 }
 
 resource "shakenfist_float" "external" {
-    interface = shakenfist_instance.jump.interfaces[0]
+    interface = shakenfist_instance.jump.network[0].interface_uuid
 }
 
 resource "shakenfist_network" "external" {
@@ -93,9 +95,9 @@ resource "shakenfist_instance" "target" {
         model = "cirrus"
         memory = 16384
     }
-    networks = [
-        "uuid=${shakenfist_network.internal.id}",
-        ]
+    network {
+        network_uuid = shakenfist_network.internal.id
+    }
 }
 
 resource "shakenfist_network" "internal" {

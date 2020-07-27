@@ -48,9 +48,9 @@ func testAccResourceFloat(randomName string) string {
 			model = "cirrus"
 			memory = 16384
 		}
-		networks = [
-			"uuid=${shakenfist_network.external.id}",
-			]
+		network {
+			network_uuid = shakenfist_network.external.id
+		}
 		metadata = {
 			person = "old man"
 			action = "shakes fist"
@@ -68,7 +68,7 @@ func testAccResourceFloat(randomName string) string {
 	}
 
 	resource "shakenfist_float" "jump" {
-		interface = shakenfist_instance.jump.interfaces[0]
+		interface = shakenfist_instance.jump.network[0].interface_uuid
 	}`
 
 	r := strings.NewReplacer("{name}", randomName)
