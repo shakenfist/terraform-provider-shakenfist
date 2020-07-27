@@ -17,7 +17,7 @@ func Provider() terraform.ResourceProvider {
 			"server_url": {
 				Type:        schema.TypeString,
 				Required:    true,
-				DefaultFunc: schema.EnvDefaultFunc("SHAKENFIST_URL", ""),
+				DefaultFunc: schema.EnvDefaultFunc("SHAKENFIST_API_URL", ""),
 			},
 			"namespace": {
 				Type:        schema.TypeString,

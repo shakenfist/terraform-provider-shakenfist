@@ -30,7 +30,7 @@ func TestProvider_impl(t *testing.T) {
 
 func testAccPreCheck(t *testing.T) {
 	required := []string{
-		"SHAKENFIST_URL",
+		"SHAKENFIST_API_URL",
 		"SHAKENFIST_NAMESPACE",
 		"SHAKENFIST_KEY",
 	}

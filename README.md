@@ -113,7 +113,7 @@ make testacc
 
 The standard Shaken Fist environment variables must be set for the acceptance tests to run successfully.
 ```
-SHAKENFIST_URL="http://sf-1:13000"
+SHAKENFIST_API_URL="http://sf-1:13000"
 SHAKENFIST_NAMESPACE="dev"
 SHAKENFIST_KEY="longsecurekey"
 ```
