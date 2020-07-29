@@ -51,8 +51,9 @@ resource "shakenfist_key" "key1" {
 
 ### Instances
 * Memory is defined in MB
-* Multiple disks can defined
-* Disk size is defined in GB
+* Multiple disks can defined, and defined in GB. (Minimum one disk)
+* Multiple network blocks can be defined.
+* One video card can be defined, the default is Cirrus with 16384KB memory.
 * Arbitrary metadata can be set on a namespace.
 
 ```
@@ -71,9 +72,19 @@ resource "shakenfist_instance" "jumpbox" {
         bus = "ide"
         type = "disk"
     }
-    networks = [
-        "uuid=${shakenfist_network.external.id}",
-        ]
+    video {
+        model = "cirrus"
+        memory = 16384
+    }
+    network {
+        network_uuid = shakenfist_network.external.id
+    }
+    network {
+        network_uuid = shakenfist_network.special.id
+        ipv4 = "10.0.1.17"
+        model = "e1000"
+        mac = "12:34:56:78:9a:Bc"        
+    }
     metadata = {
         user = "old man"
     }
