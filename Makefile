@@ -6,17 +6,24 @@
 # For linter installation (in CI) see:
 # 	https://golangci-lint.run/usage/install/#ci-installation
 #
+# Goreleaser installation:
+#	https://github.com/goreleaser/goreleaser/releases/latest
+#
+
+# Settings
+PKG_NAME = provider
+GPG_KEY = CEDCE5DB21914905D930A42CF31CB8C24C064BC3
 
 
-GOFMT_FILES?=$$(find . -name '*.go' |grep -v vendor)
-PKG_NAME=provider
-TEST?=./$(PKG_NAME)/...
-TEST_COUNT?=1
+# Test and lint
+GOFMT_FILES ?= $(shell find . -name '*.go' |grep -v vendor)
+TEST ?= ./$(PKG_NAME)/...
+TEST_COUNT ?= 1
+
 
 default: build
 
-
-build: fmtcheck
+build: fmtcheck $(GOFMT_FILES)
 	@echo "==> Building..."
 	go build .
 
@@ -41,6 +48,7 @@ lint:
 install-tools:
 	GO111MODULE=on go install github.com/golangci/golangci-lint/cmd/golangci-lint
 
+release:
+	GPG_FINGERPRINT=$(GPG_KEY) goreleaser --rm-dist --skip-publish
 
-.PHONY: build lint sweep test testacc fmt fmtcheck lint install-tools
-
+.PHONY: build lint sweep test testacc fmt fmtcheck lint install-tools release

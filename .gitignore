@@ -16,6 +16,7 @@
 
 # Build products
 terraform-provider-shakenfist
+dist/
 
 # Test artifacts
 *.tfstate*
