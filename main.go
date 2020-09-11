@@ -5,7 +5,7 @@ package main
 import (
 	"github.com/shakenfist/terraform-provider-shakenfist/provider"
 
-	"github.com/hashicorp/terraform/plugin"
+	"github.com/hashicorp/terraform-plugin-sdk/plugin"
 )
 
 func main() {

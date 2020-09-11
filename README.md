@@ -83,7 +83,7 @@ resource "shakenfist_instance" "jumpbox" {
         network_uuid = shakenfist_network.special.id
         ipv4 = "10.0.1.17"
         model = "e1000"
-        mac = "12:34:56:78:9a:Bc"        
+        mac = "12:34:56:78:9a:Bc"
     }
     metadata = {
         user = "old man"

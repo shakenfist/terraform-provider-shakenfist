@@ -3,6 +3,7 @@ module github.com/shakenfist/terraform-provider-shakenfist
 go 1.14
 
 require (
-	github.com/hashicorp/terraform v0.12.28
+	github.com/hashicorp/terraform-plugin-sdk v1.7.0
 	github.com/shakenfist/client-go v0.2.4
+	golang.org/x/crypto v0.0.0-20191011191535-87dc89f01550 // indirect
 )
