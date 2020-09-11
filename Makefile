@@ -11,9 +11,14 @@
 #
 
 # Settings
+NAME = shakenfist
 PKG_NAME = provider
 GPG_KEY = CEDCE5DB21914905D930A42CF31CB8C24C064BC3
 
+# Setup
+BINARY = terraform-provider-${NAME}
+VERSION = $(shell git describe --abbrev=0 --tags)
+VERSION_NO_V = $(VERSION:v%=%)
 
 # Test and lint
 GOFMT_FILES ?= $(shell find . -name '*.go' |grep -v vendor)
@@ -41,6 +46,10 @@ fmt:
 
 fmtcheck:
 	@sh -c "'$(CURDIR)/scripts/check_files_gofmt.sh'"
+
+install: build
+	mkdir -p ~/.terraform.d/plugins/registry.terraform.io/shakenfist/${NAME}/${VERSION_NO_V}/linux_amd64
+	cp ${BINARY} ~/.terraform.d/plugins/registry.terraform.io/shakenfist/${NAME}/${VERSION_NO_V}/linux_amd64
 
 lint:
 	@golangci-lint run ./$(PKG_NAME)/...
