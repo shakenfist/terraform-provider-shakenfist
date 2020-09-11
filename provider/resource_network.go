@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"time"
 
+	"github.com/hashicorp/terraform-plugin-sdk/helper/resource"
 	"github.com/hashicorp/terraform-plugin-sdk/helper/schema"
 	client "github.com/shakenfist/client-go"
 )
@@ -79,6 +81,10 @@ func resourceNetwork() *schema.Resource {
 		Update: resourceUpdateNetwork,
 		Importer: &schema.ResourceImporter{
 			State: schema.ImportStatePassthrough,
+		},
+		Timeouts: &schema.ResourceTimeout{
+			Create: schema.DefaultTimeout(5 * time.Minute),
+			Delete: schema.DefaultTimeout(3 * time.Minute),
 		},
 	}
 }
@@ -158,8 +164,34 @@ func resourceDeleteNetwork(d *schema.ResourceData, m interface{}) error {
 	if err != nil {
 		return fmt.Errorf("Unable to delete network: %v", err)
 	}
-	d.SetId("")
-	return nil
+
+	return resource.Retry(d.Timeout(schema.TimeoutDelete),
+		func() *resource.RetryError {
+
+			i, err := apiClient.GetNetwork(d.Id())
+			if err != nil {
+				if strings.Contains(err.Error(), "not found") {
+					return resource.NonRetryableError(nil)
+				} else {
+					return resource.NonRetryableError(fmt.Errorf(
+						"Unable to check network existence: %v", err))
+				}
+			}
+
+			if i.State == "error" {
+				return resource.NonRetryableError(fmt.Errorf(
+					"network in error state"))
+			}
+			if i.State != "deleted" {
+				return resource.RetryableError(fmt.Errorf(
+					"network not deleted"))
+			}
+
+			d.SetId("")
+
+			return resource.NonRetryableError(nil)
+		},
+	)
 }
 
 func resourceExistsNetwork(d *schema.ResourceData, m interface{}) (bool, error) {
