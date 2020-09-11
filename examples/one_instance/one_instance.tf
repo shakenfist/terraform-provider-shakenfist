@@ -1,3 +1,12 @@
+terraform {
+    required_providers {
+        shakenfist = {
+            source = "shakenfist/shakenfist"
+            versions = ">=0.3"
+        }
+    }
+}
+
 provider "shakenfist" {
     server_url = "http://sf-1:13000"
     namespace = "testspace"
