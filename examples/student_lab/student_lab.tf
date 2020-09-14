@@ -4,6 +4,14 @@
 // a second network allocated a floating IP.
 //
 
+terraform {
+    required_providers {
+        shakenfist = {
+            source = "shakenfist/shakenfist"
+            versions = ">=0.3"
+        }
+    }
+}
 
 // Create new namespace using Shaken Fist "system" privilege.
 provider "shakenfist" {
