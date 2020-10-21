@@ -184,6 +184,11 @@ func resourceInstance() *schema.Resource {
 				Computed:    true,
 				Description: "State of the instance",
 			},
+			"power_state": {
+				Type:        schema.TypeString,
+				Computed:    true,
+				Description: "Power state of the instance",
+			},
 		},
 		Create: resourceCreateInstance,
 		Read:   resourceReadInstance,
@@ -327,7 +332,31 @@ func resourceCreateInstance(d *schema.ResourceData, m interface{}) error {
 		}
 	}
 
-	return resourceReadInstance(d, m)
+	return resource.Retry(d.Timeout(schema.TimeoutDelete),
+		func() *resource.RetryError {
+
+			i, err := apiClient.GetInstance(d.Id())
+			if err != nil {
+				if strings.Contains(err.Error(), "not found") {
+					return resource.NonRetryableError(nil)
+				} else {
+					return resource.NonRetryableError(fmt.Errorf(
+						"Unable to check instance existence: %v", err))
+				}
+			}
+
+			if i.State == "error" {
+				return resource.NonRetryableError(fmt.Errorf(
+					"instance in error state"))
+			}
+			if i.State != "created" {
+				return resource.RetryableError(fmt.Errorf(
+					"instance not created"))
+			}
+
+			return resource.NonRetryableError(resourceReadInstance(d, m))
+		},
+	)
 }
 
 func resourceReadInstance(d *schema.ResourceData, m interface{}) error {
@@ -391,6 +420,9 @@ func resourceReadInstance(d *schema.ResourceData, m interface{}) error {
 	}
 	if err := d.Set("state", inst.State); err != nil {
 		return fmt.Errorf("Instance State cannot be set: %v", err)
+	}
+	if err := d.Set("power_state", inst.PowerState); err != nil {
+		return fmt.Errorf("Instance PowerState cannot be set: %v", err)
 	}
 
 	// Retrieve Interface UUID's

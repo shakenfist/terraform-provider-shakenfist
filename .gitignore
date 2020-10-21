@@ -21,3 +21,4 @@ dist/
 # Test artifacts
 *.tfstate*
 lock.json
+**/.terraform

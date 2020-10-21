@@ -36,12 +36,9 @@ resource "shakenfist_instance" "sftest" {
         network_uuid = shakenfist_network.sf-net-1.id
     }
     network {
-        network_uuid = shakenfist_network.sf-net-1.id
-        ipv4 = "10.0.1.17"
+        network_uuid = shakenfist_network.sf-net-2.id
+        ipv4 = "10.0.2.17"
         model = "e1000"
-    }
-    network {
-        network_uuid = shakenfist_network.sf-net-1.id
         mac = "12:34:56:78:9a:Bc"
     }
     metadata = {
@@ -62,4 +59,15 @@ resource "shakenfist_network" "sf-net-1" {
 
 resource "shakenfist_float" "sf-float-1" {
     interface = shakenfist_instance.sftest.network[0].interface_uuid
+}
+
+resource "shakenfist_network" "sf-net-2" {
+    name = "sf-net-2"
+    netblock = "10.0.2.0/24"
+    provide_dhcp = true
+    provide_nat = true
+    metadata = {
+        purpose = "internal"
+        random_tag = "meta meta"
+    }
 }
