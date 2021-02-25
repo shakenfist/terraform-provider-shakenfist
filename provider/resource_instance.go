@@ -332,7 +332,7 @@ func resourceCreateInstance(d *schema.ResourceData, m interface{}) error {
 		}
 	}
 
-	return resource.Retry(d.Timeout(schema.TimeoutDelete),
+	return resource.Retry(d.Timeout(schema.TimeoutCreate),
 		func() *resource.RetryError {
 
 			i, err := apiClient.GetInstance(d.Id())

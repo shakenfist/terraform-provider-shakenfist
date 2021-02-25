@@ -118,7 +118,31 @@ func resourceCreateNetwork(d *schema.ResourceData, m interface{}) error {
 		}
 	}
 
-	return nil
+	return resource.Retry(d.Timeout(schema.TimeoutCreate),
+		func() *resource.RetryError {
+
+			i, err := apiClient.GetNetwork(d.Id())
+			if err != nil {
+				if strings.Contains(err.Error(), "not found") {
+					return resource.NonRetryableError(nil)
+				} else {
+					return resource.NonRetryableError(fmt.Errorf(
+						"Unable to check network existence: %v", err))
+				}
+			}
+
+			if i.State == "error" {
+				return resource.NonRetryableError(fmt.Errorf(
+					"network in error state"))
+			}
+			if i.State != "created" {
+				return resource.RetryableError(fmt.Errorf(
+					"network not created"))
+			}
+
+			return resource.NonRetryableError(resourceReadNetwork(d, m))
+		},
+	)
 }
 
 func resourceReadNetwork(d *schema.ResourceData, m interface{}) error {
@@ -148,7 +172,7 @@ func resourceReadNetwork(d *schema.ResourceData, m interface{}) error {
 	// Retrieve metadata
 	metadata, err := apiClient.GetNetworkMetadata(d.Id())
 	if err != nil {
-		return fmt.Errorf("ReadInstance unable to retrieve metadata: %v", err)
+		return fmt.Errorf("ReadNetwork unable to retrieve metadata: %v", err)
 	}
 	if err := d.Set("metadata", metadata); err != nil {
 		return fmt.Errorf("Network Metadata cannot be set: %v", err)
