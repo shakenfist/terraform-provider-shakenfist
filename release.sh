@@ -12,6 +12,7 @@ read DUMMY
 vim go.mod
 go mod download github.com/shakenfist/client-go
 git commit -a -m "Bump versions for release."
+git push origin master
 
 echo "--- Setup ---"
 echo "Do you want to apply a git tag for this release (yes to tag)?"
