@@ -204,6 +204,7 @@ github.com/shakenfist/client-go v0.4.11/go.mod h1:tV2epEKeDUgjEKBgxdQUundNk6+UOf
 github.com/shakenfist/client-go v0.4.12/go.mod h1:tV2epEKeDUgjEKBgxdQUundNk6+UOfsmH0gfpx1zp20=
 github.com/shakenfist/client-go v0.4.13/go.mod h1:tV2epEKeDUgjEKBgxdQUundNk6+UOfsmH0gfpx1zp20=
 github.com/shakenfist/client-go v0.4.14/go.mod h1:tV2epEKeDUgjEKBgxdQUundNk6+UOfsmH0gfpx1zp20=
+github.com/shakenfist/client-go v0.4.15/go.mod h1:tV2epEKeDUgjEKBgxdQUundNk6+UOfsmH0gfpx1zp20=
 github.com/spf13/afero v1.2.2 h1:5jhuqJyZCZf2JRofRvN/nIFgIWNzPa3/Vz8mYylgbWc=
 github.com/spf13/afero v1.2.2/go.mod h1:9ZxEEn6pIJ8Rxe320qSDBk6AsU0r9pR7Q4OcevTdifk=
 github.com/spf13/pflag v1.0.2/go.mod h1:DYY7MBk1bdzusC3SYhjObp+wFpr4gzcvqqNjLnInEg4=
